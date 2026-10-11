@@ -75,6 +75,19 @@ def main():
         settle()
         window.grabWindow().save(os.path.join(out, name + ".png"))
 
+    healthy = os.path.join(work, "Pendrive sano.img")
+    X.mkfs(healthy)
+    ok = X.ExfatImage(healthy)
+    for name, data in standard_tree().items():
+        ok.add(name, data)
+    ok.flush()
+    ok.close()
+    backend.addImage(QUrl.fromLocalFile(healthy))
+    backend.choose(0)
+    settle("diagnosed")
+    shot("2b-healthy")
+    backend.back()
+
     backend.addImage(QUrl.fromLocalFile(image))
     shot("1-pick")
     backend.choose(0)

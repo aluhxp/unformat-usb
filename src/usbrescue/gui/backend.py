@@ -68,6 +68,7 @@ class Backend(QObject):
                                     # | recovering | done | nothing | error
             error="", sourceName="", sourceDetail="",
             verdict="", diagFat=False, diagRoot=False, diagRootFolders=0,
+            currentFolders=[], currentFolderCount=0, currentFiles=0,
             scanProgress=0.0, scanEta=-1, foundFiles=0, foundFolders=0, foundBytes=0,
             orphanCount=0, rootRecovered=False, withOrphans=True,
             selectedFiles=0, selectedBytes=0, canRescueNow=False, early=False, rescuedEarly=0,
@@ -268,7 +269,10 @@ class Backend(QObject):
                 updates.update(phase="error", error=e)
             elif kind == "diagnosis":
                 updates.update(phase="diagnosed", verdict=e.verdict, diagFat=e.old_fat,
-                               diagRoot=e.old_root, diagRootFolders=len(e.root_folders))
+                               diagRoot=e.old_root, diagRootFolders=len(e.root_folders),
+                               currentFolders=e.current_folders[:6],
+                               currentFolderCount=len(e.current_folders),
+                               currentFiles=e.current_files)
             elif kind == "report":
                 updates.update(reportPath=e)
             elif kind == "preview":

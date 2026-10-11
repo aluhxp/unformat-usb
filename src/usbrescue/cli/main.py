@@ -40,6 +40,9 @@ ORPHAN_STATUS = {
 
 
 VERDICTS = {
+    "in_use": "Este pendrive parece estar bien: sus archivos estan a la vista y no hay senales de un "
+              "formateo reciente. Si buscas algo borrado o anterior a un formateo, el escaneo "
+              "completo puede encontrarlo.",
     "names_and_structure": "Buenas noticias: la carpeta raiz antigua sigue ahi. Se pueden recuperar "
                            "las carpetas con sus nombres.",
     "structure": "La tabla FAT antigua sobrevivio: se puede reconstruir el arbol de carpetas y los "
@@ -53,6 +56,7 @@ VERDICTS = {
 
 def print_diagnosis(d):
     print(f"Formato actual: {d.current_fs or 'no reconocido'}")
+    print(f"A la vista ahora: {len(d.current_folders)} carpetas y {d.current_files} archivos en la raiz")
     print(f"Tabla FAT antigua: {'si, ' + str(d.fat_links) + ' enlaces' if d.old_fat else 'no'}")
     if d.old_root:
         print(f"Raiz antigua: si, {len(d.root_folders)} carpetas y {d.root_files} archivos")

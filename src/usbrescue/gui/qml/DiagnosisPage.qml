@@ -5,14 +5,17 @@ Item {
     readonly property var st: win.st
     readonly property bool busy: st.phase === "diagnosing"
     readonly property bool good: st.verdict === "names_and_structure" || st.verdict === "structure"
+    readonly property bool healthy: st.verdict === "in_use"
 
     readonly property var headline: ({
+        in_use: qsTr("Este pendrive parece estar bien."),
         names_and_structure: qsTr("Muy buenas noticias: tus carpetas siguen ahí, con sus nombres."),
         structure: qsTr("Buenas noticias: tus carpetas siguen ahí."),
         scan_needed: qsTr("Vamos a buscar a fondo."),
         looks_empty: qsTr("Este pendrive parece vacío.")
     })
     readonly property var detail: ({
+        in_use: qsTr("Sus archivos están a la vista y no vemos señales de un formateo reciente: puedes abrirlos con normalidad, no hace falta rescatarlos."),
         names_and_structure: qsTr("Revisamos el pendrive en un momento. Esto es lo que dejó el formateo:"),
         structure: qsTr("Revisamos el pendrive en un momento. Esto es lo que dejó el formateo:"),
         scan_needed: qsTr("El formateo borró el índice, pero los archivos pueden seguir ahí. Solo la búsqueda completa lo dirá."),
@@ -27,7 +30,7 @@ Item {
         Row {
             spacing: 22
             width: parent.width
-            Mascot { width: 84; mood: page.busy ? "working" : page.good ? "happy" : "calm" }
+            Mascot { width: 84; mood: page.busy ? "working" : page.good || page.healthy ? "happy" : "calm" }
             Column {
                 width: parent.width - 106
                 anchors.verticalCenter: parent.verticalCenter
@@ -48,7 +51,33 @@ Item {
         }
 
         Card {
-            visible: !page.busy
+            visible: page.healthy && !page.busy
+            width: parent.width
+            height: seen.implicitHeight + 36
+            Column {
+                id: seen
+                anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top
+                anchors.margins: 18; anchors.leftMargin: 20; anchors.rightMargin: 20
+                spacing: 8
+                Txt {
+                    width: parent.width; font.weight: Font.Bold
+                    text: qsTr("Lo que tiene ahora: %1 carpetas y %2 archivos sueltos").arg(win.num(page.st.currentFolderCount)).arg(win.num(page.st.currentFiles))
+                }
+                Txt {
+                    visible: page.st.currentFolders.length > 0
+                    width: parent.width; color: Theme.soft; font.pixelSize: 15
+                    elide: Text.ElideRight; wrapMode: Text.NoWrap
+                    text: page.st.currentFolders.join(" · ") + (page.st.currentFolderCount > page.st.currentFolders.length ? " …" : "")
+                }
+                Txt {
+                    width: parent.width; color: Theme.soft; font.pixelSize: 15
+                    text: qsTr("¿Buscas algo que borraste, o lo que había antes de un formateo? Entonces sí podemos buscar: lo que ya no está a la vista a veces sigue en el pendrive.")
+                }
+            }
+        }
+
+        Card {
+            visible: !page.busy && !page.healthy
             width: parent.width
             height: rows.implicitHeight + 12
             Column {
@@ -97,7 +126,8 @@ Item {
         visible: !page.busy
         anchors.right: parent.right; anchors.bottom: parent.bottom
         anchors.margins: 32; anchors.rightMargin: 72
-        label: qsTr("Empezar a buscar")
+        primary: !page.healthy
+        label: page.healthy ? qsTr("Buscar de todos modos") : qsTr("Empezar a buscar")
         onClicked: backend.scan()
     }
 }

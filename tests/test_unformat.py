@@ -34,6 +34,50 @@ def test_diagnosis_when_only_the_fat_survived(tmp_path):
     assert (d.verdict, d.old_fat, d.old_root) == ("structure", True, False)
 
 
+def test_a_healthy_drive_is_recognised_as_such(tmp_path):
+    path = tmp_path / "pendrive.img"
+    build(path).close()                 # full of files, never formatted
+    d = diagnose(Source(str(path)))
+    assert d.verdict == "in_use"
+    assert set(d.current_folders) == {"Fotos", "Documentos", "iconos", "Videos"}
+    assert d.current_files == 3
+
+
+def test_a_healthy_fat32_drive_is_recognised_too(tmp_path):
+    path = tmp_path / "pendrive.img"
+    F.mkfs(path)
+    img = F.Fat32Image(path)
+    img.add("Fotos/playa.jpg", blob(1, 9000))
+    img.add("leeme.txt", b"hola")
+    img.flush()
+    img.close()
+    d = diagnose(Source(str(path)))
+    assert (d.verdict, d.current_folders, d.current_files) == ("in_use", ["Fotos"], 1)
+
+
+def test_a_just_formatted_drive_is_not_called_healthy(tmp_path):
+    path = tmp_path / "pendrive.img"
+    img = build(path)
+    img.windows_quick_format()
+    img.close()
+    d = diagnose(Source(str(path)))
+    assert d.verdict == "structure" and d.current_folders == [] and d.current_files == 0
+
+
+def test_files_copied_after_a_format_make_it_in_use_but_the_old_fat_is_still_noticed(tmp_path):
+    path = tmp_path / "pendrive.img"
+    img = build(path)
+    img.windows_quick_format()
+    img.close()
+    after = X.ExfatImage(path)
+    after.add("nuevo.txt", b"copiado despues de formatear")
+    after.flush()
+    after.close()
+    d = diagnose(Source(str(path)))
+    assert d.verdict == "in_use" and d.current_files == 1
+    assert d.old_fat is True            # there is still something older underneath
+
+
 def test_diagnosis_when_the_old_root_survived(tmp_path):
     path = tmp_path / "pendrive.img"
     used_drive(path)
