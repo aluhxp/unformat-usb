@@ -92,6 +92,8 @@ class Session:
             kind = hit[0]
             if kind == "ex_start":
                 live.add_start(hit[1])
+            elif kind == "ex_root":
+                live.add_root(hit[1])
             elif kind == "fat_dot":
                 dots.append(hit[1:])
             elif kind == "fat_ref":
@@ -121,7 +123,8 @@ class Session:
                 yield NothingFound()
                 return
             g, parent_of, contents, dir_cls = live.geometry, live.parent_of, live.contents, live.dir_cls
-            root_ents, root_cl, calibration, blocks = [], 0, live.calibration, len(live.starts)
+            root_ents, root_cl = live.root_entries, live.root_cluster
+            calibration, blocks = live.calibration, len(live.starts)
         else:
             yield NothingFound()
             return
@@ -158,6 +161,7 @@ class Session:
             paths=paths, plans=plans, total_bytes=total, orphans=orphans, renamed=renamed,
             unnamed_tops=len(unnamed) - len(renamed), calibration=calibration,
             folder_blocks=blocks, fragmented=frag, chained=chained, fat_state=fat_state,
+            root_recovered=fs == "exfat" and live.root_is_old,
             names=self.names)
         yield ScanFinished(self.result)
 

@@ -80,6 +80,13 @@ class FolderPlaced:
 
 
 @dataclass
+class RootRecovered:
+    """The old root folder survived: first-level names are known after all."""
+    folders: int
+    files: int
+
+
+@dataclass
 class TreeReset:
     """Folders announced so far were a false lead; the tree starts over."""
 
@@ -145,4 +152,5 @@ class ScanResult:
     fragmented: int             # files whose entry says they are not contiguous
     chained: int                # ...of which the old FAT has the full chain
     fat_state: str              # "kept" | "unreliable" | "missing"
+    root_recovered: bool = False
     names: Names = field(default_factory=Names)

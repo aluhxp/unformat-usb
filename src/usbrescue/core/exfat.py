@@ -4,8 +4,8 @@ the scan is still running."""
 import collections
 import datetime
 
-from .model import Entry, FolderFound, FolderPlaced, GeometryCalibrated, Geometry
-from .oldfat import load_old_fat
+from .model import Entry, FolderFound, FolderPlaced, GeometryCalibrated, Geometry, RootRecovered
+from .oldfat import EOC, load_old_fat
 from .scan import EX_FILE, EX_STREAM
 from .util import CLUSTER_SIZES, ENTRY, u16, u32, u64
 
@@ -13,6 +13,8 @@ EX_KNOWN = {0x81, 0x82, 0x83, 0xA0, 0xA1, 0xA2, 0x85, 0xC0, 0xC1}
 DIR_FIRST_BYTES = (0x85, 0x05, 0x81, 0x82, 0x83, 0xC0, 0xC1, 0x40, 0x41)
 CALIBRATION_STARTS = 4000   # folder blocks used to deduce the geometry
 EARLY_MIN_REFS = 8          # references needed before trusting the boot sector early
+# folders the operating system creates by itself on a freshly formatted drive
+SYSTEM_NAMES = {"system volume information", "$recycle.bin"}
 
 
 def ex_dt(ts):
@@ -113,6 +115,10 @@ class ExfatTree:
     def __init__(self, disk, boot, want_deleted):
         self.disk, self.boot, self.want_deleted = disk, boot, want_deleted
         self.starts, self.sset = [], set()
+        self.roots = []             # sectors that look like the start of a root folder
+        self.root_cluster = 0       # the root folder whose entries are used
+        self.root_entries = []
+        self.root_is_old = False    # ...and whether it is the one from before the format
         self.geometry = None
         self.calibration = (0, 0)
         self.contents, self.dir_cls, self.parent_of = {}, {}, {}
@@ -126,6 +132,9 @@ class ExfatTree:
     def add_start(self, off):
         self.starts.append(off)
         self.sset.add(off)
+
+    def add_root(self, off):
+        self.roots.append(off)
 
     # ------------------------------------------------------------ geometry
 
@@ -185,7 +194,7 @@ class ExfatTree:
         if c in self.contents:
             return
         g, cs = self.geometry, self.geometry.cs
-        ents, used = [], []
+        raws, used = [], []
         nclus = max(1, (length + cs - 1) // cs) if length and contiguous else 4096
         clusters = range(c, c + nclus)
         if g.fat and length and not contiguous:
@@ -197,14 +206,68 @@ class ExfatTree:
                 break
             if k and length is None and g.coff(cc) not in self.sset and raw[0] not in DIR_FIRST_BYTES:
                 break
-            got, ended, junk = parse_dir(raw, self.want_deleted)
-            ents += got
+            _, ended, junk = parse_dir(raw, self.want_deleted)
+            raws.append(raw)
             used.append(cc)
             if ended or junk:
                 break
-        self.contents[c] = ents
+        # parsed as one piece: an entry set may straddle two clusters
+        self.contents[c] = parse_dir(b"".join(raws), self.want_deleted)[0]
         for u in used:
             self.dir_cls[u] = c
+
+    def _read_root(self, c):
+        """Entries of a root folder starting at cluster c, and its clusters.
+        A root always uses the FAT; without one, assume it is contiguous."""
+        g = self.geometry
+        clusters = None
+        if g.fat:
+            chain, x = [], c
+            while 2 <= x < g.fat.n and len(chain) < 4096 and x not in chain:
+                chain.append(x)
+                x = g.fat.t[x]
+            if x == EOC:
+                clusters = chain
+        raws, used = [], []
+        for k, cc in enumerate(clusters or range(c, c + 4096)):
+            raw = self.disk.read(g.coff(cc), g.cs)
+            if not raw or (k and raw[0] not in DIR_FIRST_BYTES):
+                break
+            _, ended, junk = parse_dir(raw, self.want_deleted)
+            raws.append(raw)
+            used.append(cc)
+            if ended or junk:
+                break
+        return parse_dir(b"".join(raws), self.want_deleted)[0], used
+
+    def _adopt_root(self):
+        """Among the root-looking blocks, keep the one that names the most
+        folders nobody else claims. The root written by the new format names
+        none, so it never wins."""
+        g = self.geometry
+        best = (0, None, None, None)
+        for off in self.roots:
+            if off < g.start or (off - g.start) % g.cs:
+                continue
+            c = g.cluster_of(off)
+            ents, used = self._read_root(c)
+            score = sum(1 for en in ents if en.is_dir and en.cluster in self.contents
+                        and en.cluster not in self.parent_of)
+            if score > best[0]:
+                best = (score, c, ents, used)
+        score, c, ents, used = best
+        if not score:
+            return
+        self.root_cluster, self.root_entries = c, ents
+        for u in used:
+            self.dir_cls[u] = c
+        # the root written by the new format may name what the system added
+        # afterwards; that is not the user's old root
+        old = [en for en in ents if en.name.lower() not in SYSTEM_NAMES]
+        self.root_is_old = bool(old)
+        if old:
+            yield RootRecovered(sum(1 for en in old if en.is_dir),
+                                sum(1 for en in old if not en.is_dir))
 
     def _visit(self, c):
         if c in self.dir_cls:
@@ -268,10 +331,12 @@ class ExfatTree:
                 self._read_dir(c, length, contiguous)
         # blocks nobody points to are first-level folders: their names were in
         # the root, which the format wiped
+        yield from self._adopt_root()
+        top_names = {en.cluster: en.name for en in self.root_entries if en.is_dir}
         for c in list(self.contents):
             if c not in self.parent_of:
                 self.parent_of[c] = 0
-                yield FolderPlaced(c, 0, None)
+                yield FolderPlaced(c, 0, top_names.get(c))
         g = self.geometry
         self._collect_refs()
         refs = list(self._refs)

@@ -37,11 +37,34 @@ def exfat_set_ok(buf, i, allow_deleted):
     return nlen > 0 and sec == 1 + (nlen + 14) // 15
 
 
+def exfat_root_ok(buf, i):
+    """First sector of an exFAT root folder: it opens with the volume's own
+    entries (label, allocation bitmap, upcase table)."""
+    if i + 128 > len(buf):
+        return False
+    types = [buf[i + ENTRY * k] for k in range(4)]
+    return types[0] in (0x83, 0x03, 0x81) and 0x81 in types and 0x82 in types
+
+
+def find_exfat_roots(buf, lim):
+    """Offsets inside buf of sectors that look like the start of an exFAT root."""
+    firsts = buf[0:lim:SECTOR]
+    out = []
+    for code in (0x83, 0x03, 0x81):
+        k = firsts.find(bytes([code]))
+        while k != -1:
+            if exfat_root_ok(buf, k * SECTOR):
+                out.append(k * SECTOR)
+            k = firsts.find(bytes([code]), k + 1)
+    return sorted(out)
+
+
 def scan_blocks(disk, want_deleted):
     """Yields, in disk order:
          ("fat_dot", offset, own_cluster, parent_cluster)   a FAT32 folder
          ("fat_ref", offset, cluster)                       a FAT32 entry naming a folder
          ("ex_start", offset)                               a sector starting an exFAT folder
+         ("ex_root", offset)                                a sector starting an exFAT root
          ("progress", bytes_scanned)                        after each chunk
     """
     off = 0
@@ -86,6 +109,8 @@ def scan_blocks(disk, want_deleted):
                 k = firsts.find(bytes([code]), k + 1)
         for s in sorted(found):
             yield ("ex_start", s)
+        for p in find_exfat_roots(buf, lim):
+            yield ("ex_root", off + p)
 
         off += CHUNK
         yield ("progress", min(off, disk.size))
