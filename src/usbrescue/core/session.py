@@ -64,16 +64,32 @@ def iter_runs(disk, g, runs, nbytes):
             return
 
 
+def file_key(en):
+    """Identifies a file across re-reads of its folder."""
+    return (en.cluster, en.size, en.name)
+
+
+def file_plan(en, g, fat):
+    """(runs, method): the clusters a file's data comes from."""
+    ncl = (en.size + g.cs - 1) // g.cs
+    if en.size and en.cluster >= 2 and not en.contiguous and fat:
+        chain = fat.chain(en.cluster, ncl)
+        if chain:
+            return to_runs(chain), "fat_chain"
+    return [(en.cluster, ncl)], "contiguous"
+
+
 class Session:
     def __init__(self, source_path, *, include_deleted=False, fs_type=None,
-                 find_orphans=True, names=None):
+                 find_orphans=True, names=None, disk=None):
         self.source_path = source_path
-        self.disk = Source(source_path)
+        self.disk = disk or Source(source_path)
         self.include_deleted = include_deleted
         self.fs_type = fs_type
         self.find_orphans = find_orphans
         self.names = names or Names()
         self.result = None
+        self.live = None        # the exFAT tree while it is being built
 
     def close(self):
         self.disk.close()
@@ -86,7 +102,7 @@ class Session:
         yield SourceOpened(disk.size, boot["fs"] if boot else None)
 
         dots, refs = [], []
-        live = ExfatTree(disk, boot, deleted)
+        live = self.live = ExfatTree(disk, boot, deleted)
         announced = False
         for hit in scan_blocks(disk, deleted):
             kind = hit[0]
@@ -177,14 +193,10 @@ class Session:
             for c in range(2, min(boot["root"] + 1, len(claimed))):
                 claimed[c] = 1   # bitmap, upcase table and root of the new format
         for rel, en in tasks:
-            ncl = (en.size + g.cs - 1) // g.cs
-            runs, method = [(en.cluster, ncl)], "contiguous"
+            runs, method = file_plan(en, g, fat)
             if en.size and en.cluster >= 2 and not en.contiguous:
                 frag += 1
-                ch = fat.chain(en.cluster, ncl) if fat else None
-                if ch:
-                    runs, method = to_runs(ch), "fat_chain"
-                    chained += 1
+                chained += method == "fat_chain"
             if en.size and en.cluster >= 2:
                 for first, count in runs:
                     a, b = max(first, 0), min(first + count, len(claimed))
@@ -193,21 +205,70 @@ class Session:
             plans.append((rel, en, runs, method))
         return plans, claimed, frag, chained
 
+    # ------------------------------------------- looking before recovering
+
+    @property
+    def geometry(self):
+        if self.result:
+            return self.result.geometry
+        return self.live.geometry if self.live else None
+
+    def folder_files(self, cluster):
+        """Files directly inside a folder; works while the scan is running."""
+        contents = self.result.contents if self.result else (self.live.contents if self.live else {})
+        return [en for en in contents.get(cluster, []) if not en.is_dir]
+
+    def read_file(self, en, limit):
+        """The first `limit` bytes of a file, for a preview."""
+        g = self.geometry
+        if g is None or en.cluster < 2 or not en.size:
+            return b""
+        runs, _ = file_plan(en, g, g.fat)
+        valid = en.size if en.valid is None else min(en.valid, en.size)
+        return b"".join(iter_runs(self.disk, g, runs, min(valid, limit)))
+
+    def live_plans(self, clusters):
+        """Plans for folders picked while the scan is still running. A folder
+        whose parents are not known yet goes under the names known so far."""
+        live, g = self.live, self.geometry
+        if live is None or g is None:
+            return []
+
+        def path_of(c):
+            parts, seen = [], set()
+            while c and c not in seen:
+                seen.add(c)
+                name = live._names.get(c)
+                parts.append(sanitize(name) if name else self.names.unnamed_folder.format(c))
+                c = live.parent_of.get(c)
+            return os.path.join(*reversed(parts))
+
+        return [(path_of(c), en) + file_plan(en, g, g.fat)
+                for c in clusters for en in self.folder_files(c)]
+
     # ------------------------------------------------------------- recover
 
-    def recover(self, dest, *, only_orphans=False, folders=None, with_orphans=True):
-        """folders: relative folder paths to recover (None = all of them)."""
-        r, disk = self.result, self.disk
-        g = r.geometry
+    def recover(self, dest, *, only_orphans=False, folders=None, with_orphans=True,
+                skip=None, plans=None):
+        """folders: relative folder paths to recover (None = all of them).
+        skip: file keys to leave out. plans: recover exactly these instead,
+        which is how folders are rescued before the scan ends."""
+        r, disk, g = self.result, self.disk, self.geometry
+        dir_clusters = r.dir_clusters if r else self.live.dir_cls
         check_destination(self.source_path, dest)
         os.makedirs(dest, exist_ok=True)
         done, ok, warned = 0, 0, 0
         taken = set()
-        plans = [] if only_orphans else r.plans
+        if plans is None:
+            plans = [] if only_orphans else r.plans
+            orphans = r.orphans if with_orphans else []
+        else:
+            orphans = []
         if folders is not None:
             plans = [p for p in plans if p[0] in folders]
+        if skip:
+            plans = [p for p in plans if file_key(p[1]) not in skip]
         total = sum(p[1].size for p in plans)
-        orphans = r.orphans if with_orphans else []
         for rel, en, runs, method in plans:
             folder = os.path.join(dest, rel)
             os.makedirs(folder, exist_ok=True)
@@ -225,7 +286,7 @@ class Session:
                 warnings.append("no_data")
             elif en.size and method == "contiguous":
                 ncl = (en.size + g.cs - 1) // g.cs
-                if any((en.cluster + k) in r.dir_clusters for k in range(min(ncl, 1 << 20))):
+                if any((en.cluster + k) in dir_clusters for k in range(min(ncl, 1 << 20))):
                     warnings.append("fragmented")
                 elif not en.contiguous:
                     warnings.append("maybe_fragmented")
@@ -258,10 +319,10 @@ class Session:
 
         saved = 0
         if orphans:
-            folder = os.path.join(dest, r.names.orphan_dir)
+            folder = os.path.join(dest, self.names.orphan_dir)
             os.makedirs(folder, exist_ok=True)
             for o in orphans:
-                res = save_orphan(disk, g, o, folder, r.names.orphan_file)
+                res = save_orphan(disk, g, o, folder, self.names.orphan_file)
                 if res:
                     path, size, when, status = res
                     saved += 1
