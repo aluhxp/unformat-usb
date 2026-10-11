@@ -32,7 +32,9 @@ def run():
     if not engine.rootObjects():
         sys.exit(1)
     backend.refreshDevices()
-    sys.exit(app.exec())
+    code = app.exec()
+    backend.cleanup()
+    sys.exit(code)
 
 
 if __name__ == "__main__":

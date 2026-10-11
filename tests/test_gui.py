@@ -108,3 +108,80 @@ def test_a_folder_found_before_its_parent_waits_and_then_moves(app):
     model.refresh()
     assert [(n.id, n.name) for n in model.rows] == [(10, "Carpeta 10"), (20, "viaje")]
     assert model.nodes[10].total_files == 4
+
+
+def test_a_folder_lists_its_files_and_previews_text(app, scanned):
+    scanned.toggleExpanded(0)
+    row = names(scanned).index("viaje_03")
+    scanned.selectFolder(row)
+    assert [f["name"] for f in scanned.state["files"]] == ["foto_3.jpg", "notas.txt"]
+    scanned.selectFile(1)
+    assert scanned.state["preview"]["kind"] == "text"
+    assert scanned.state["preview"]["text"].startswith("viaje numero 3")
+
+
+def test_a_picture_preview_is_copied_to_this_computer_not_the_drive(app, scanned):
+    scanned.toggleExpanded(0)
+    scanned.selectFolder(names(scanned).index("viaje_03"))
+    scanned.selectFile(0)
+    end = time.time() + 10
+    while not scanned.state["preview"].get("source") and time.time() < end:
+        app.processEvents()
+        scanned._drain()
+        time.sleep(0.01)
+    path = QUrl(scanned.state["preview"]["source"]).toLocalFile()
+    assert path.startswith(scanned._preview_dir)
+    assert open(path, "rb").read() == expected_in_folders()["viaje_03/foto_3.jpg"]
+
+
+def test_unticking_one_file_leaves_only_that_file_out(app, scanned, tmp_path):
+    scanned.toggleExpanded(0)
+    scanned.selectFolder(names(scanned).index("viaje_03"))
+    scanned.setFileChecked(0, False)
+    assert scanned.state["selectedFiles"] == 29
+    scanned.setWithOrphans(False)
+    scanned.recover(str(tmp_path / "out"))
+    wait_for(app, scanned, "done")
+    got = [k for k in files_under(tmp_path / "out") if k != "_informe_recuperacion.csv"]
+    assert len(got) == 29 and not any(k.endswith("viaje_03/foto_3.jpg") for k in got)
+
+
+def test_rescuing_during_the_scan_then_finishing_copies_nothing_twice(app, tmp_path):
+    path = tmp_path / "pendrive.img"
+    img = build(path)
+    img.windows_quick_format()
+    img.close()
+    with open(path, "ab") as f:
+        f.truncate(400 * 1024 * 1024)       # more to scan after the folders show up
+    backend = Backend()
+    backend.addImage(QUrl.fromLocalFile(str(path)))
+    backend.choose(0)
+    wait_for(app, backend, "diagnosed")
+    read = backend._session.disk.read
+
+    def slow(off, n):                        # a slow drive, so the scan is still going
+        if n > 1024 * 1024:
+            time.sleep(0.05)
+        return read(off, n)
+
+    backend._session.disk.read = slow
+    backend.scan()
+    end = time.time() + 20
+    while not backend.state["canRescueNow"] and time.time() < end:
+        app.processEvents()
+        backend._drain()
+        time.sleep(0.005)
+    assert backend.state["phase"] == "scanning" and backend.state["canRescueNow"]
+    out = tmp_path / "out"
+    backend.recover(str(out))
+    wait_for(app, backend, "scanning")       # back to the scan after the early rescue
+    early = backend.state["rescuedEarly"]
+    assert early > 0
+    wait_for(app, backend, "scanned")
+    backend.setWithOrphans(False)
+    backend.recover(str(out))
+    wait_for(app, backend, "done")
+    got = [k for k in files_under(out) if k != "_informe_recuperacion.csv"]
+    assert len(got) == 30 and not any(" (1)" in k for k in got)
+    assert backend.state["sumOk"] == 30
+    backend.back()

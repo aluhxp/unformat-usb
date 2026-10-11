@@ -15,12 +15,26 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path[:0] = [os.path.join(HERE, "..", "src"), os.path.join(HERE, "..", "tests")]
 
 from PySide6.QtCore import QUrl                       # noqa: E402
-from PySide6.QtGui import QGuiApplication             # noqa: E402
+from PySide6.QtCore import QBuffer, QIODevice         # noqa: E402
+from PySide6.QtGui import QColor, QGuiApplication, QImage, QPainter   # noqa: E402
 from PySide6.QtQuick import QQuickWindow              # noqa: E402,F401  (types the root window)
 
 from factory import exfat_image as X                  # noqa: E402
-from test_exfat import build                          # noqa: E402
+from helpers import standard_tree                     # noqa: E402
 from usbrescue.gui.app import build as build_window   # noqa: E402
+
+
+def sample_picture():
+    image = QImage(480, 320, QImage.Format_RGB32)
+    image.fill(QColor("#9FD8C5"))
+    p = QPainter(image)
+    p.setBrush(QColor("#FFC857"))
+    p.drawEllipse(150, 70, 180, 180)
+    p.end()
+    buf = QBuffer()
+    buf.open(QIODevice.WriteOnly)
+    image.save(buf, "PNG")
+    return bytes(buf.data())
 
 
 def main():
@@ -28,11 +42,19 @@ def main():
     os.makedirs(out, exist_ok=True)
     work = tempfile.mkdtemp(prefix="usbrescue-screens-")
     image = os.path.join(work, "Pendrive de prueba.img")
-    img = build(image)
+    app = QGuiApplication(sys.argv)
+    X.mkfs(image)
+    img = X.ExfatImage(image)
+    for name, data in standard_tree().items():
+        img.add(name, data)
+    img.add("Fotos/Cumpleaños 2023/tarta.png", sample_picture())
+    img.add("Fotos/Cumpleaños 2023/lista de invitados.txt", "Ana\nLuis\nMarta\nPedro\n".encode())
+    img.add("Fotos/Cumpleaños 2023/video.mp4", b"\x00\x00\x00\x1cftypisom" + os.urandom(90000))
+    img.add("notas.txt", b"una nota suelta\n" * 10)
+    img.flush()
     img.windows_quick_format()
     img.close()
 
-    app = QGuiApplication(sys.argv)
     engine, backend = build_window(app)
     window = engine.rootObjects()[0]
     window.setProperty("forceDark", "--dark" in sys.argv)
@@ -61,11 +83,16 @@ def main():
     backend.scan()
     settle("scanned")
     backend.toggleExpanded(0)
+    row = next(i for i, n in enumerate(backend.tree.rows) if n.name == "Cumpleaños 2023")
+    backend.selectFolder(row)
+    backend.selectFile(next(i for i, f in enumerate(backend.state["files"]) if f["name"] == "tarta.png"))
+    settle(seconds=1.0)
     shot("3-tree")
     backend.recover(os.path.join(work, "out"))
     settle("done")
     shot("5-done")
     print("phase:", backend.state["phase"], {k: backend.state[k] for k in ("sumOk", "sumWarned", "sumOrphans", "sumUnnamed")})
+    backend.cleanup()
 
 
 if __name__ == "__main__":

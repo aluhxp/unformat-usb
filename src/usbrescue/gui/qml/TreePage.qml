@@ -21,6 +21,8 @@ Item {
                 font.pixelSize: 23; font.weight: Font.ExtraBold
                 text: page.st.foundFolders === 0
                     ? qsTr("Buscando tus carpetas…")
+                    : page.scanning && page.st.rescuedEarly > 0
+                    ? qsTr("Ya rescatamos %1 archivos; seguimos buscando").arg(win.num(page.st.rescuedEarly))
                     : (page.scanning ? qsTr("Ya encontramos %1 archivos en %2 carpetas") : qsTr("Encontramos %1 archivos en %2 carpetas"))
                         .arg(win.num(page.st.foundFiles)).arg(win.num(page.st.foundFolders))
             }
@@ -38,9 +40,11 @@ Item {
     }
 
     Card {
-        anchors.left: parent.left; anchors.right: parent.right
+        id: treeCard
+        anchors.left: parent.left
         anchors.top: top.bottom; anchors.bottom: bottom.top
-        anchors.margins: 16; anchors.leftMargin: 32; anchors.rightMargin: 32
+        anchors.margins: 16; anchors.leftMargin: 32
+        width: Math.round((parent.width - 64 - 16) * 0.58)
 
         Txt {
             visible: list.count === 0
@@ -70,11 +74,16 @@ Item {
                 required property bool lostName
                 required property bool isPending
                 required property bool isGroup
+                required property bool rescued
+                required property int nodeId
                 width: list.width - 12
                 height: 44
                 radius: 10
-                color: hover.hovered && !isGroup ? Theme.rowHover : "transparent"
+                color: !isGroup && (hover.hovered || page.st.folderId === nodeId) ? Theme.rowHover : "transparent"
+                border.color: Theme.accent
+                border.width: !isGroup && page.st.folderId === nodeId ? 2 : 0
                 HoverHandler { id: hover }
+                TapHandler { enabled: !row.isGroup; onTapped: backend.selectFolder(row.index) }
 
                 Txt {
                     visible: row.isGroup
@@ -104,7 +113,19 @@ Item {
                         onToggled: (value) => backend.setChecked(row.index, value)
                     }
                     FolderIcon { anchors.verticalCenter: parent.verticalCenter; faded: row.isPending || row.lostName }
-                    Txt { anchors.verticalCenter: parent.verticalCenter; text: row.name; font.weight: Font.Bold; wrapMode: Text.NoWrap }
+                    Txt {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: row.name; font.weight: Font.Bold; wrapMode: Text.NoWrap
+                        elide: Text.ElideRight
+                        width: Math.min(implicitWidth, Math.max(60, row.width - 220 - Math.max(0, row.depth) * 26
+                                                                - (row.lostName || row.rescued ? 135 : 0)))
+                    }
+                    Rectangle {
+                        visible: row.rescued
+                        anchors.verticalCenter: parent.verticalCenter
+                        color: Theme.rowHover; radius: 11; height: 22; width: done.implicitWidth + 16
+                        Txt { id: done; anchors.centerIn: parent; text: qsTr("Ya rescatada"); color: Theme.accent; font.pixelSize: 13; font.weight: Font.ExtraBold }
+                    }
                     Rectangle {
                         visible: row.lostName
                         anchors.verticalCenter: parent.verticalCenter
@@ -117,7 +138,129 @@ Item {
                     anchors.right: parent.right; anchors.rightMargin: 12
                     anchors.verticalCenter: parent.verticalCenter
                     color: Theme.soft; font.pixelSize: 14
-                    text: qsTr("%1 archivos · %2").arg(win.num(row.totalFiles)).arg(backend.size(row.totalSize))
+                    text: row.totalFiles === 1 ? qsTr("1 archivo") : qsTr("%1 archivos").arg(win.num(row.totalFiles))
+                }
+            }
+        }
+    }
+
+    Card {
+        id: side
+        anchors.left: treeCard.right; anchors.right: parent.right
+        anchors.top: top.bottom; anchors.bottom: bottom.top
+        anchors.margins: 16; anchors.rightMargin: 32
+
+        Txt {
+            visible: page.st.folderId < 0
+            anchors.centerIn: parent
+            width: parent.width - 48
+            horizontalAlignment: Text.AlignHCenter
+            color: Theme.soft
+            text: qsTr("Toca una carpeta para ver lo que tiene dentro.")
+        }
+
+        Column {
+            visible: page.st.folderId >= 0
+            anchors.fill: parent
+            anchors.margins: 14
+            spacing: 10
+
+            Rectangle {
+                id: previewBox
+                visible: page.st.preview.name !== undefined
+                width: parent.width
+                height: visible ? 170 : 0
+                radius: 10
+                color: Theme.bg
+                clip: true
+                Image {
+                    id: picture
+                    visible: page.st.preview.kind === "image" && status === Image.Ready
+                    anchors.fill: parent; anchors.margins: 6
+                    fillMode: Image.PreserveAspectFit
+                    // decoded on the UI thread, at a size that keeps it quick; the
+                    // bytes were already read from the drive on a worker thread
+                    sourceSize.width: 900
+                    cache: false
+                    source: page.st.preview.kind === "image" ? (page.st.preview.source || "") : ""
+                }
+                Txt {
+                    visible: page.st.preview.kind === "text"
+                    anchors.fill: parent; anchors.margins: 10
+                    font.pixelSize: 13; font.family: "monospace"
+                    wrapMode: Text.WrapAnywhere; elide: Text.ElideRight
+                    text: page.st.preview.text || ""
+                }
+                Txt {
+                    visible: page.st.preview.kind === "info" || (page.st.preview.kind === "image" && picture.status !== Image.Ready)
+                    anchors.centerIn: parent
+                    width: parent.width - 24; horizontalAlignment: Text.AlignHCenter
+                    color: Theme.soft; font.pixelSize: 14
+                    text: page.st.preview.kind === "image"
+                        ? (picture.status === Image.Error ? qsTr("Esta imagen no se puede mostrar: puede estar dañada.") : qsTr("Cargando la imagen…"))
+                        : qsTr("Este tipo de archivo todavía no tiene vista previa.")
+                }
+            }
+            Txt {
+                visible: previewBox.visible
+                width: parent.width; font.pixelSize: 14; color: Theme.soft
+                elide: Text.ElideMiddle; wrapMode: Text.NoWrap
+                text: (page.st.preview.name || "") + " · " + (page.st.preview.size || "") + (page.st.preview.date ? " · " + page.st.preview.date : "")
+            }
+            Txt {
+                width: parent.width; font.weight: Font.ExtraBold
+                elide: Text.ElideRight; wrapMode: Text.NoWrap
+                text: page.st.folderName
+            }
+            Txt {
+                visible: page.st.files.length === 0
+                width: parent.width; color: Theme.soft; font.pixelSize: 14
+                text: qsTr("Esta carpeta no tiene archivos sueltos: mira dentro de sus subcarpetas.")
+            }
+            ListView {
+                id: fileList
+                width: parent.width
+                height: parent.height - y
+                clip: true
+                model: page.st.files
+                ScrollBar.vertical: ScrollBar {}
+                footer: Txt {
+                    visible: page.st.filesHidden > 0
+                    height: visible ? implicitHeight + 12 : 0
+                    color: Theme.soft; font.pixelSize: 13
+                    text: qsTr("…y %1 archivos más en esta carpeta").arg(win.num(page.st.filesHidden))
+                }
+                delegate: Rectangle {
+                    id: fileRow
+                    required property var modelData
+                    required property int index
+                    width: fileList.width - 10
+                    height: 38
+                    radius: 8
+                    color: fileHover.hovered || page.st.preview.name === modelData.name ? Theme.rowHover : "transparent"
+                    HoverHandler { id: fileHover }
+                    TapHandler { onTapped: backend.selectFile(fileRow.index) }
+                    Check {
+                        id: fileCheck
+                        x: 6; anchors.verticalCenter: parent.verticalCenter
+                        width: 20; height: 20
+                        checked: fileRow.modelData.checked; name: fileRow.modelData.name
+                        onToggled: (value) => backend.setFileChecked(fileRow.index, value)
+                    }
+                    Txt {
+                        anchors.left: fileCheck.right; anchors.leftMargin: 10
+                        anchors.right: fileSize.left; anchors.rightMargin: 8
+                        anchors.verticalCenter: parent.verticalCenter
+                        font.pixelSize: 14; elide: Text.ElideMiddle; wrapMode: Text.NoWrap
+                        text: fileRow.modelData.name
+                    }
+                    Txt {
+                        id: fileSize
+                        anchors.right: parent.right; anchors.rightMargin: 6
+                        anchors.verticalCenter: parent.verticalCenter
+                        color: Theme.soft; font.pixelSize: 13
+                        text: fileRow.modelData.size
+                    }
                 }
             }
         }
@@ -143,7 +286,9 @@ Item {
                 }
                 Txt {
                     font.pixelSize: 15
-                    text: qsTr("Incluir %1 archivos sin carpeta (los que estaban sueltos, fuera de las carpetas)").arg(win.num(page.st.orphanCount))
+                    text: page.st.orphanCount === 1
+                        ? qsTr("Incluir 1 archivo sin carpeta (estaba suelto, fuera de las carpetas)")
+                        : qsTr("Incluir %1 archivos sin carpeta (los que estaban sueltos, fuera de las carpetas)").arg(win.num(page.st.orphanCount))
                 }
             }
             Row {
@@ -152,10 +297,9 @@ Item {
                     color: Theme.soft; font.pixelSize: 15
                     width: Math.min(implicitWidth, bottom.width - go.width - 150)
                     elide: Text.ElideMiddle; wrapMode: Text.NoWrap
-                    text: page.scanning ? qsTr("Podrás rescatar en cuanto termine la búsqueda.") : qsTr("Se guardará en: %1").arg(page.destination)
+                    text: qsTr("Se guardará en: %1").arg(page.destination)
                 }
                 Txt {
-                    visible: !page.scanning
                     text: qsTr("Cambiar…"); color: Theme.accent; font.pixelSize: 15; font.weight: Font.Bold
                     TapHandler { onTapped: folderDialog.open() }
                     HoverHandler { cursorShape: Qt.PointingHandCursor }
@@ -165,8 +309,9 @@ Item {
         Btn {
             id: go
             anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
-            enabledLook: !page.scanning && page.st.selectedFiles + (page.st.withOrphans ? page.st.orphanCount : 0) > 0
-            label: qsTr("Rescatar lo marcado (%1)").arg(backend.size(page.st.selectedBytes))
+            enabledLook: page.scanning ? page.st.canRescueNow
+                : page.st.selectedFiles + (page.st.withOrphans ? page.st.orphanCount : 0) > 0
+            label: (page.scanning ? qsTr("Rescatar ya lo marcado (%1)") : qsTr("Rescatar lo marcado (%1)")).arg(backend.size(page.st.selectedBytes))
             onClicked: backend.recover(page.destination)
         }
     }

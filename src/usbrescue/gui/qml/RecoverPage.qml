@@ -16,7 +16,9 @@ Item {
         }
         Txt {
             width: parent.width; horizontalAlignment: Text.AlignHCenter; color: Theme.soft; font.pixelSize: 17
-            text: qsTr("Vamos por %1 de %2. Puedes seguir usando la computadora.").arg(win.num(page.st.recDone)).arg(win.num(page.st.recTotal))
+            text: (page.st.early ? qsTr("Vamos por %1 de %2. Al terminar seguimos buscando el resto.")
+                                 : qsTr("Vamos por %1 de %2. Puedes seguir usando la computadora."))
+                .arg(win.num(page.st.recDone)).arg(win.num(page.st.recTotal))
         }
         Bar { width: parent.width; height: 22; value: page.st.recProgress }
         Item {

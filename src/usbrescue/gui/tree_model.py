@@ -12,7 +12,7 @@ PENDING = -1    # id of the "still locating" group
 
 class Node:
     __slots__ = ("id", "name", "parent", "children", "files", "size", "checked",
-                 "expanded", "lost_name", "total_files", "total_size")
+                 "expanded", "lost_name", "total_files", "total_size", "rescued")
 
     def __init__(self, node_id, name=None):
         self.id, self.name = node_id, name
@@ -20,6 +20,7 @@ class Node:
         self.files = self.size = 0              # its own files
         self.total_files = self.total_size = 0  # ...plus everything below it
         self.checked, self.expanded, self.lost_name = True, False, False
+        self.rescued = False                    # already copied out, before the scan ended
 
     @property
     def depth(self):
@@ -32,7 +33,7 @@ class Node:
 class FolderTreeModel(QAbstractListModel):
     ROLES = {Qt.UserRole + i: name.encode() for i, name in enumerate(
         ("nodeId", "name", "depth", "totalFiles", "totalSize", "checked", "expanded",
-         "hasChildren", "lostName", "isPending", "isGroup"))}
+         "hasChildren", "lostName", "isPending", "isGroup", "rescued"))}
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -82,6 +83,8 @@ class FolderTreeModel(QAbstractListModel):
             return self._under_pending(n)
         if key == "isGroup":
             return n is self.pending
+        if key == "rescued":
+            return n.rescued
         return None
 
     def _under_pending(self, n):
@@ -123,6 +126,7 @@ class FolderTreeModel(QAbstractListModel):
     def rebuild(self, result):
         """Final, authoritative shape once the scan is over."""
         checked = {c: n.checked for c, n in self.nodes.items()}
+        rescued = {c for c, n in self.nodes.items() if n.rescued}
         expanded = {c for c, n in self.nodes.items() if n.expanded}
         unnamed = result.names.unnamed_folder.split("{")[0]
         self.beginResetModel()
@@ -132,6 +136,7 @@ class FolderTreeModel(QAbstractListModel):
             files = [en for en in ents if not en.is_dir]
             node.files, node.size = len(files), sum(en.size for en in files)
             node.checked, node.expanded = checked.get(c, True), c in expanded
+            node.rescued = c in rescued
         for c, node in self.nodes.items():
             p = result.parent_of.get(c)
             inside = p in self.nodes and p != c and \
@@ -221,6 +226,16 @@ class FolderTreeModel(QAbstractListModel):
             n.checked = value
             stack += n.children
         self.dataChanged.emit(self.index(0), self.index(len(self.rows) - 1))
+
+    def mark_rescued(self, clusters):
+        for c in clusters:
+            if c in self.nodes:
+                self.nodes[c].rescued, self.nodes[c].checked = True, False
+        if self.rows:
+            self.dataChanged.emit(self.index(0), self.index(len(self.rows) - 1))
+
+    def node_at(self, row):
+        return self.rows[row] if 0 <= row < len(self.rows) else None
 
     def selected(self):
         """(folder clusters, file count, bytes) of everything ticked."""

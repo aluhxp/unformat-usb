@@ -7,13 +7,13 @@ Item {
 
     readonly property var headline: ({
         nothing: qsTr("No encontramos carpetas en este pendrive."),
-        no_permission: qsTr("Hace falta permiso para leer este pendrive."),
+        no_permission: qsTr("No tenemos permiso para leer este pendrive."),
         same_device: qsTr("Elige otro lugar para guardar."),
         io: qsTr("No pudimos leer el pendrive.")
     })
     readonly property var detail: ({
         nothing: qsTr("Puede que se hiciera un formateo completo, que borra todo, o que el pendrive usara otro sistema de archivos. No es culpa tuya, y lo sentimos."),
-        no_permission: qsTr("El sistema solo deja leer un pendrive completo con permiso de administrador. Esta versión todavía no lo pide sola: mientras tanto puedes crear una copia de disco y abrirla con «Abrir una copia de disco»."),
+        no_permission: qsTr("El sistema solo deja leer un pendrive completo con la contraseña de administrador. Si cancelaste la ventana de la contraseña, vuelve a elegirlo e inténtalo otra vez."),
         same_device: qsTr("La carpeta elegida está en el mismo pendrive que quieres rescatar. Guardar ahí taparía los archivos que buscamos."),
         io: qsTr("Revisa que siga conectado y vuelve a intentarlo. Detalle: %1").arg(st.error.slice(3))
     })

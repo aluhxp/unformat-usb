@@ -58,7 +58,7 @@ Item {
                     anchors.right: parent.right; anchors.rightMargin: 20
                     anchors.verticalCenter: parent.verticalCenter
                     color: Theme.warnBg; radius: 11; height: 24; width: tag.implicitWidth + 18
-                    Txt { id: tag; anchors.centerIn: parent; text: qsTr("Necesita permiso"); color: Theme.warnInk; font.pixelSize: 13; font.weight: Font.ExtraBold }
+                    Txt { id: tag; anchors.centerIn: parent; text: qsTr("Te pedirá la contraseña"); color: Theme.warnInk; font.pixelSize: 13; font.weight: Font.ExtraBold }
                 }
             }
         }

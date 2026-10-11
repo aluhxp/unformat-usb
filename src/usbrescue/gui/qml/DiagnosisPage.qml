@@ -39,7 +39,10 @@ Item {
                 }
                 Txt {
                     width: parent.width; color: Theme.soft
-                    text: page.busy ? qsTr("Son solo unos segundos.") : (page.detail[page.st.verdict] || "")
+                    text: !page.busy ? (page.detail[page.st.verdict] || "")
+                        : page.st.needsPermission
+                        ? qsTr("El sistema te pedirá la contraseña para poder leer el pendrive. Solo lo leemos: no se escribe nada en él.")
+                        : qsTr("Son solo unos segundos.")
                 }
             }
         }
