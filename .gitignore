@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+build/
+dist/
+
+# Datos de usuarios: nunca en el repositorio
+*.img
+*.map
+*.pkl
+*.csv
+recuperado*/
