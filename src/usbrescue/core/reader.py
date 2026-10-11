@@ -1,28 +1,34 @@
 """Read-only access to the source (an image file or a raw device)."""
 
 import os
+import struct
+import subprocess
+import sys
+import threading
 
 from .util import SECTOR
 
 
 class Source:
-    """Never opened for writing. Unreadable sectors come back as zeros."""
+    """Never opened for writing. Unreadable sectors come back as zeros.
+    Safe to read from several threads at once."""
 
     def __init__(self, path):
         self.path = path
-        self.f = open(path, "rb", buffering=0)
-        self.f.seek(0, os.SEEK_END)
-        self.size = self.f.tell()
         self.bad_sectors = 0
+        self._open(path)
+
+    def _open(self, path):
+        self.fd = os.open(path, os.O_RDONLY)
+        self.size = os.lseek(self.fd, 0, os.SEEK_END)
 
     def close(self):
-        self.f.close()
+        os.close(self.fd)
 
     def _raw(self, off, n):
-        self.f.seek(off)
         out = bytearray()
         while len(out) < n:
-            c = self.f.read(n - len(out))
+            c = os.pread(self.fd, n - len(out), off + len(out))
             if not c:
                 break
             out += c
@@ -47,3 +53,51 @@ class Source:
                     self.bad_sectors += 1
                 pos += step
             return bytes(out)
+
+
+class HelperSource(Source):
+    """A drive this process may not open itself, read through the small
+    privileged helper (see helper.py). The system asks the person for
+    permission when it starts."""
+
+    def __init__(self, path, command=None):
+        self._command = command
+        self._lock = threading.Lock()
+        super().__init__(path)
+
+    def _open(self, path):
+        helper = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "helper.py")
+        command = self._command or ["pkexec", sys.executable, helper]
+        self.proc = subprocess.Popen(command + [path], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        head = self.proc.stdout.read(17)
+        if len(head) < 17 or head[:5] != b"USBR1":
+            self.close()
+            raise PermissionError(path)     # refused, cancelled, or no way to ask
+        status, self.size = struct.unpack("<iQ", head[5:])
+        if status:
+            self.close()
+            raise PermissionError(path)
+
+    def close(self):
+        try:
+            self.proc.stdin.close()
+        except OSError:
+            pass
+        self.proc.wait(timeout=5)
+
+    def _raw(self, off, n):
+        out = bytearray()
+        with self._lock:
+            while len(out) < n:
+                self.proc.stdin.write(struct.pack("<QI", off + len(out), n - len(out)))
+                self.proc.stdin.flush()
+                head = self.proc.stdout.read(8)
+                if len(head) < 8:
+                    raise OSError(5, "the helper stopped answering")
+                status, length = struct.unpack("<iI", head)
+                if status:
+                    raise OSError(status, os.strerror(status))
+                if not length:
+                    break
+                out += self.proc.stdout.read(length)
+        return out
