@@ -50,6 +50,18 @@ Item {
             Btn { label: qsTr("Rescatar otro pendrive"); primary: false; onClicked: backend.back() }
         }
 
+        Row {
+            visible: page.st.imageMade
+            spacing: 14
+            Txt {
+                anchors.verticalCenter: parent.verticalCenter
+                width: Math.min(implicitWidth, page.width - 144 - drop.width - 14)
+                font.pixelSize: 15
+                text: qsTr("La copia de seguridad ocupa %1. Cuando hayas comprobado tus archivos, puedes borrarla.").arg(backend.size(page.st.driveSize))
+            }
+            Btn { id: drop; label: qsTr("Borrar la copia"); primary: false; implicitHeight: 40; onClicked: backend.deleteCopy() }
+        }
+
         Txt {
             width: parent.width; color: Theme.soft; font.pixelSize: 15
             text: qsTr("Abre algunos archivos importantes para comprobar que están bien antes de volver a usar el pendrive. El informe dice cuáles conviene revisar.")

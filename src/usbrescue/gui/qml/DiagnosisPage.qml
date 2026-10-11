@@ -24,8 +24,8 @@ Item {
 
     Column {
         anchors.fill: parent
-        anchors.margins: 32; anchors.leftMargin: 72; anchors.rightMargin: 72
-        spacing: 20
+        anchors.margins: 24; anchors.leftMargin: 72; anchors.rightMargin: 72
+        spacing: 14
 
         Row {
             spacing: 22
@@ -116,6 +116,76 @@ Item {
         }
     }
 
+    // how to go about it: only a real drive can fail while being read
+    Column {
+        visible: !page.busy && page.st.isDevice
+        anchors.left: parent.left; anchors.right: parent.right
+        anchors.bottom: parent.bottom; anchors.bottomMargin: 106
+        anchors.leftMargin: 72; anchors.rightMargin: 72
+        spacing: 8
+        Txt { text: qsTr("¿Cómo quieres hacerlo?"); font.weight: Font.ExtraBold }
+        Row {
+            width: parent.width; spacing: 14
+            Repeater {
+                model: [
+                    { mode: "safe", title: qsTr("Modo seguro"),
+                      text: !page.st.safeFits
+                        ? qsTr("No hay espacio: la copia necesita %1 y tienes %2 libres.").arg(backend.size(page.st.driveSize)).arg(backend.size(page.st.freeSpace))
+                        : page.st.safeRoomy
+                        ? qsTr("Primero copiamos el pendrive entero a tu computadora y trabajamos sobre la copia. Necesita %1; tienes %2 libres.").arg(backend.size(page.st.driveSize)).arg(backend.size(page.st.freeSpace))
+                        : qsTr("La copia cabe (%1 de %2 libres), pero puede que después no quede sitio para todo lo rescatado.").arg(backend.size(page.st.driveSize)).arg(backend.size(page.st.freeSpace)) },
+                    { mode: "direct", title: qsTr("Modo directo"),
+                      text: qsTr("Leemos directamente del pendrive. Empieza antes, pero si el pendrive está fallando es más arriesgado.") }
+                ]
+                Card {
+                    id: option
+                    required property var modelData
+                    readonly property bool chosen: page.st.mode === modelData.mode
+                    readonly property bool usable: modelData.mode === "direct" || page.st.safeFits
+                    width: (parent.width - 14) / 2
+                    height: 104
+                    border.width: 2
+                    border.color: chosen ? Theme.accent : Theme.line
+                    opacity: usable ? 1 : 0.6
+                    activeFocusOnTab: true
+                    Accessible.role: Accessible.RadioButton
+                    Accessible.name: modelData.title
+                    Accessible.checked: chosen
+                    Keys.onSpacePressed: backend.setMode(modelData.mode)
+                    TapHandler { enabled: option.usable; onTapped: backend.setMode(option.modelData.mode) }
+                    HoverHandler { cursorShape: option.usable ? Qt.PointingHandCursor : Qt.ArrowCursor }
+                    Rectangle {
+                        id: radio
+                        x: 16; y: 16; width: 20; height: 20; radius: 10
+                        color: "transparent"; border.width: 2
+                        border.color: option.chosen ? Theme.accent : Theme.soft
+                        Rectangle { visible: option.chosen; anchors.centerIn: parent; width: 10; height: 10; radius: 5; color: Theme.accent }
+                    }
+                    Txt {
+                        id: optionTitle
+                        anchors.left: radio.right; anchors.leftMargin: 12; y: 13
+                        text: option.modelData.title; font.pixelSize: 17; font.weight: Font.ExtraBold
+                    }
+                    Rectangle {
+                        visible: option.modelData.mode === "safe" && page.st.safeRoomy
+                        anchors.left: optionTitle.right; anchors.leftMargin: 10
+                        anchors.verticalCenter: optionTitle.verticalCenter
+                        color: Theme.sun; radius: 10; height: 20; width: rec.implicitWidth + 16
+                        Txt { id: rec; anchors.centerIn: parent; text: qsTr("Recomendado"); color: Theme.sunInk; font.pixelSize: 12; font.weight: Font.ExtraBold }
+                    }
+                    Txt {
+                        anchors.left: radio.right; anchors.leftMargin: 12
+                        anchors.right: parent.right; anchors.rightMargin: 14
+                        y: 40
+                        color: Theme.soft; font.pixelSize: 14
+                        maximumLineCount: 3; elide: Text.ElideRight
+                        text: option.modelData.text
+                    }
+                }
+            }
+        }
+    }
+
     Row {
         visible: !page.busy
         anchors.left: parent.left; anchors.bottom: parent.bottom
@@ -127,7 +197,8 @@ Item {
         anchors.right: parent.right; anchors.bottom: parent.bottom
         anchors.margins: 32; anchors.rightMargin: 72
         primary: !page.healthy
-        label: page.healthy ? qsTr("Buscar de todos modos") : qsTr("Empezar a buscar")
-        onClicked: backend.scan()
+        label: page.healthy ? qsTr("Buscar de todos modos")
+            : page.st.mode === "safe" ? qsTr("Hacer la copia y buscar") : qsTr("Empezar a buscar")
+        onClicked: backend.start()
     }
 }

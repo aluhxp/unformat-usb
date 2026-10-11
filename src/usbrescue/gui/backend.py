@@ -13,12 +13,14 @@ from PySide6.QtCore import Property, QObject, QTimer, QUrl, Signal, Slot
 from PySide6.QtGui import QDesktopServices
 
 from ..cli.main import METHODS, ORPHAN_STATUS, WARNINGS
+from ..core import imaging
 from ..core import model as ev
 from ..core.diagnose import diagnose
 from ..core.orphans import looks_text
 from ..core.reader import HelperSource
 from ..core.session import Session, UnsafeDestination, file_key
 from ..core.util import fmt_size as _fmt_size
+from ..core.util import sanitize
 from ..devices import Device, list_removable
 from .tree_model import FolderTreeModel
 
@@ -48,6 +50,8 @@ class Backend(QObject):
         self._session = None
         self._device = None
         self._early = None              # folders asked for while the scan runs
+        self._stop_imaging = False
+        self._default_dest = os.path.join(os.path.expanduser("~"), "Recuperado")
         self._excluded = {}             # file key -> (folder, size) of unticked files
         self._done_keys = set()         # files already rescued
         self._folder = None             # folder whose files are listed
@@ -69,6 +73,9 @@ class Backend(QObject):
             error="", sourceName="", sourceDetail="",
             verdict="", diagFat=False, diagRoot=False, diagRootFolders=0,
             currentFolders=[], currentFolderCount=0, currentFiles=0,
+            isDevice=False, driveSize=0, freeSpace=0, safeFits=False, safeRoomy=False,
+            mode="direct", imgProgress=0.0, imgEta=-1, imgSpeed=0.0, imgBad=0,
+            imgRetrying=False, imagePath="", imageMade=False,
             scanProgress=0.0, scanEta=-1, foundFiles=0, foundFolders=0, foundBytes=0,
             orphanCount=0, rootRecovered=False, withOrphans=True,
             selectedFiles=0, selectedBytes=0, canRescueNow=False, early=False, rescuedEarly=0,
@@ -98,7 +105,7 @@ class Backend(QObject):
 
     @Property(str, constant=True)
     def defaultDestination(self):
-        return os.path.join(os.path.expanduser("~"), "Recuperado")
+        return self._default_dest
 
     @Slot(float, result=str)
     def size(self, n):
@@ -129,8 +136,12 @@ class Backend(QObject):
         self._tree.clear()
         self._forget()
         self._reset_state()
+        free, fits, roomy = imaging.space_check(d.size, self.defaultDestination)
+        device = d.transport != "image"
         self._set(phase="diagnosing", sourceName=d.name, sourceDetail=fmt_size(d.size),
-                  needsPermission=not d.readable)
+                  needsPermission=not d.readable, isDevice=device, driveSize=d.size,
+                  freeSpace=free, safeFits=fits, safeRoomy=roomy,
+                  mode="safe" if device and roomy else "direct")
         self._run(self._do_diagnose)
 
     @Slot()
@@ -180,6 +191,59 @@ class Backend(QObject):
         disk = None if d.readable else HelperSource(d.path)
         self._session = Session(d.path, names=NAMES, disk=disk)
         self._events.put(("diagnosis", diagnose(self._session.disk)))
+
+    @Slot(str)
+    def setMode(self, mode):
+        if mode == "direct" or self._s["safeFits"]:
+            self._set(mode=mode)
+
+    @Slot()
+    def start(self):
+        """Begin with whichever way was chosen: copy first, or read the drive."""
+        if self._s["mode"] == "safe":
+            self._stop_imaging = False
+            self._set(phase="imaging", imgProgress=0.0, imgEta=-1, imgBad=0, imgRetrying=False)
+            self._run(self._do_image)
+        else:
+            self.scan()
+
+    @Slot()
+    def pauseImaging(self):
+        self._stop_imaging = True
+
+    def _do_image(self):
+        d = self._device
+        folder = self.defaultDestination
+        os.makedirs(folder, exist_ok=True)
+        name = os.path.splitext(d.name)[0] if d.transport == "image" else d.name
+        path = os.path.join(folder, f"Copia de {sanitize(name)}.img")
+        self._events.put(("image_path", path))
+        started, first = time.time(), None
+        for e in imaging.make_image(self._session.disk, d.path, path):
+            if self._stop_imaging:
+                self._events.put(("image_paused", None))
+                return
+            if isinstance(e, imaging.ImageProgress):
+                first = e.done if first is None else first      # a resumed copy starts part-way
+                self._events.put(("image", (e, time.time() - started, first)))
+        # from here on the drive is no longer needed: everything reads the copy
+        self._close()
+        self._session = Session(path, names=NAMES)
+        self._events.put(("image_done", e.bad_bytes))
+        self._scan_started = time.time()
+        self._do_scan()
+
+    @Slot()
+    def deleteCopy(self):
+        """Remove the safety copy this program made (it is as big as the drive)."""
+        path = self._s["imagePath"]
+        if not self._s["imageMade"] or not path:
+            return
+        self._close()
+        for p in (path, imaging.map_path_of(path)):
+            if os.path.exists(p):
+                os.remove(p)
+        self._set(imageMade=False)
 
     @Slot()
     def scan(self):
@@ -275,6 +339,20 @@ class Backend(QObject):
                                currentFiles=e.current_files)
             elif kind == "report":
                 updates.update(reportPath=e)
+            elif kind == "image_path":
+                updates.update(imagePath=e)
+            elif kind == "image":
+                p, elapsed, first = e
+                frac = p.done / p.total if p.total else 1.0
+                speed = (p.done - first) / elapsed if elapsed > 0 else 0.0
+                updates.update(imgProgress=frac, imgBad=p.bad_bytes, imgRetrying=p.retrying,
+                               imgSpeed=speed,
+                               imgEta=int((p.total - p.done) / speed) if speed > 0 else -1)
+            elif kind == "image_paused":
+                updates.update(phase="diagnosed")
+            elif kind == "image_done":
+                updates.update(phase="scanning", imageMade=True, imgProgress=1.0, imgBad=e,
+                               scanProgress=0.0, scanEta=-1)
             elif kind == "preview":
                 serial, target = e
                 if serial == self._preview_serial:      # still the file being looked at

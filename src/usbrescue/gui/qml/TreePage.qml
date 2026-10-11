@@ -37,6 +37,11 @@ Item {
             }
         }
         Bar { width: parent.width; value: page.st.scanProgress }
+        Txt {
+            visible: page.st.imageMade
+            width: parent.width; color: Theme.accent; font.pixelSize: 14; font.weight: Font.Bold
+            text: qsTr("La copia está hecha: ya puedes desconectar el pendrive. Ahora trabajamos sobre la copia.")
+        }
     }
 
     Card {

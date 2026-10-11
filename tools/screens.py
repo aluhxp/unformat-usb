@@ -56,6 +56,7 @@ def main():
     img.close()
 
     engine, backend = build_window(app)
+    backend._default_dest = os.path.join(work, "Recuperado")
     window = engine.rootObjects()[0]
     window.setProperty("forceDark", "--dark" in sys.argv)
 
@@ -92,8 +93,17 @@ def main():
     shot("1-pick")
     backend.choose(0)
     settle("diagnosed")
+    # an image file stands in for a real drive, so the safe/direct choice shows
+    backend._set(isDevice=True, driveSize=61872793600, safeFits=True, safeRoomy=True, mode="safe")
     shot("2-diagnosis")
-    backend.scan()
+    raw = backend._session.disk._raw
+    backend._session.disk._raw = lambda off, n: (time.sleep(0.03), raw(off, n))[1]
+    backend._s["driveSize"] = os.path.getsize(image)
+    backend.start()
+    while backend.state["imgProgress"] < 0.4:
+        app.processEvents()
+        time.sleep(0.01)
+    shot("2c-imaging")
     settle("scanned")
     backend.toggleExpanded(0)
     row = next(i for i, n in enumerate(backend.tree.rows) if n.name == "Cumpleaños 2023")
@@ -104,6 +114,7 @@ def main():
     backend.recover(os.path.join(work, "out"))
     settle("done")
     shot("5-done")
+    backend.deleteCopy()
     print("phase:", backend.state["phase"], {k: backend.state[k] for k in ("sumOk", "sumWarned", "sumOrphans", "sumUnnamed")})
     backend.cleanup()
 

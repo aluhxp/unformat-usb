@@ -8,7 +8,8 @@ import pytest
 pytest.importorskip("PySide6")
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtCore import QCoreApplication, QUrl      # noqa: E402
+from PySide6.QtCore import QUrl, qInstallMessageHandler   # noqa: E402
+from PySide6.QtGui import QGuiApplication               # noqa: E402
 
 from helpers import files_under                         # noqa: E402
 from test_exfat import build, expected_in_folders, in_folders     # noqa: E402
@@ -18,7 +19,7 @@ from usbrescue.gui.tree_model import PENDING, FolderTreeModel     # noqa: E402
 
 @pytest.fixture(scope="module")
 def app():
-    return QCoreApplication.instance() or QCoreApplication([])
+    return QGuiApplication.instance() or QGuiApplication([])
 
 
 def wait_for(app, backend, phase):
@@ -185,3 +186,101 @@ def test_rescuing_during_the_scan_then_finishing_copies_nothing_twice(app, tmp_p
     assert len(got) == 30 and not any(" (1)" in k for k in got)
     assert backend.state["sumOk"] == 30
     backend.back()
+
+
+def formatted_image(tmp_path):
+    path = tmp_path / "pendrive.img"
+    img = build(path)
+    img.windows_quick_format()
+    img.close()
+    return path
+
+
+def test_safe_mode_copies_the_drive_first_and_rescues_from_the_copy(app, tmp_path):
+    source = formatted_image(tmp_path)
+    backend = Backend()
+    backend._default_dest = str(tmp_path / "Recuperado")
+    backend.addImage(QUrl.fromLocalFile(str(source)))
+    backend.choose(0)
+    wait_for(app, backend, "diagnosed")
+    assert backend.state["mode"] == "direct"            # a file cannot fail like a drive
+    backend.setMode("safe")
+    backend.start()
+    wait_for(app, backend, "scanned")
+    copy = backend.state["imagePath"]
+    assert backend.state["imageMade"] and open(copy, "rb").read() == open(source, "rb").read()
+    assert backend._session.source_path == copy         # the drive is no longer being read
+    backend.setWithOrphans(False)
+    backend.recover(str(tmp_path / "out"))
+    wait_for(app, backend, "done")
+    assert backend.state["sumOk"] == 30
+    backend.deleteCopy()
+    assert not os.path.exists(copy) and not os.path.exists(copy + ".map")
+    backend.back()
+
+
+def test_pausing_the_copy_goes_back_and_resuming_finishes_it(app, tmp_path):
+    source = formatted_image(tmp_path)
+    backend = Backend()
+    backend._default_dest = str(tmp_path / "Recuperado")
+    backend.addImage(QUrl.fromLocalFile(str(source)))
+    backend.choose(0)
+    wait_for(app, backend, "diagnosed")
+    backend.setMode("safe")
+    raw = backend._session.disk._raw
+
+    def slow(off, n):
+        time.sleep(0.02)
+        return raw(off, n)
+
+    backend._session.disk._raw = slow
+    backend.start()
+    while backend.state["imgProgress"] <= 0:
+        app.processEvents()
+        backend._drain()
+        time.sleep(0.005)
+    backend.pauseImaging()
+    wait_for(app, backend, "diagnosed")
+    assert 0 < backend.state["imgProgress"] < 1 and not backend.state["imageMade"]
+    backend._session.disk._raw = raw
+    backend.start()
+    wait_for(app, backend, "scanned")
+    assert open(backend.state["imagePath"], "rb").read() == open(source, "rb").read()
+    backend.back()
+
+
+def test_safe_mode_is_refused_without_room_for_the_copy(app, tmp_path):
+    backend = Backend()
+    backend.addImage(QUrl.fromLocalFile(str(formatted_image(tmp_path))))
+    backend.choose(0)
+    wait_for(app, backend, "diagnosed")
+    backend._s["safeFits"] = False
+    backend.setMode("safe")
+    assert backend.state["mode"] == "direct"
+    backend.back()
+
+
+def test_every_screen_loads_without_a_qml_error(app):
+    """A typo in a screen only shows when that screen is opened: open them all."""
+    from usbrescue.gui.app import build as build_window
+
+    problems = []
+    qInstallMessageHandler(lambda kind, context, text: problems.append(text))
+    try:
+        engine, backend = build_window(app)
+        window = engine.rootObjects()[0]
+        for phase in ("pick", "diagnosing", "diagnosed", "imaging", "scanning", "scanned",
+                      "recovering", "done", "nothing", "error"):
+            for device in (False, True):
+                backend._set(phase=phase, isDevice=device, verdict="structure", error="no_permission")
+                app.processEvents()
+                loader = window.findChild(object, "pages")
+                assert loader.property("item") is not None, f"{phase} did not load"
+        backend._set(phase="diagnosed", verdict="in_use")
+        app.processEvents()
+        window.close()
+        engine.deleteLater()
+        app.processEvents()
+    finally:
+        qInstallMessageHandler(None)
+    assert problems == []

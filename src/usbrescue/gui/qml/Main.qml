@@ -62,9 +62,11 @@ ApplicationWindow {
     }
 
     Loader {
+        objectName: "pages"
         anchors.fill: parent
         source: ({
             pick: "PickPage.qml", diagnosing: "DiagnosisPage.qml", diagnosed: "DiagnosisPage.qml",
+            imaging: "ImagingPage.qml",
             scanning: "TreePage.qml", scanned: "TreePage.qml", recovering: "RecoverPage.qml",
             done: "DonePage.qml", nothing: "MessagePage.qml", error: "MessagePage.qml"
         })[win.st.phase]
