@@ -195,14 +195,20 @@ class Session:
 
     # ------------------------------------------------------------- recover
 
-    def recover(self, dest, *, only_orphans=False):
+    def recover(self, dest, *, only_orphans=False, folders=None, with_orphans=True):
+        """folders: relative folder paths to recover (None = all of them)."""
         r, disk = self.result, self.disk
         g = r.geometry
         check_destination(self.source_path, dest)
         os.makedirs(dest, exist_ok=True)
         done, ok, warned = 0, 0, 0
         taken = set()
-        for rel, en, runs, method in ([] if only_orphans else r.plans):
+        plans = [] if only_orphans else r.plans
+        if folders is not None:
+            plans = [p for p in plans if p[0] in folders]
+        total = sum(p[1].size for p in plans)
+        orphans = r.orphans if with_orphans else []
+        for rel, en, runs, method in plans:
             folder = os.path.join(dest, rel)
             os.makedirs(folder, exist_ok=True)
             fname = sanitize(en.name)
@@ -235,7 +241,7 @@ class Session:
                     for data in iter_runs(disk, g, runs, valid):
                         out.write(data)
                         done += len(data)
-                        yield CopyProgress(done, r.total_bytes)
+                        yield CopyProgress(done, total)
                 if en.size > valid:
                     out.truncate(en.size)
             if disk.bad_sectors > bad_before:
@@ -251,13 +257,13 @@ class Session:
             yield FileRecovered(os.path.relpath(target, dest), en.size, en.mtime, warnings, method)
 
         saved = 0
-        if r.orphans:
+        if orphans:
             folder = os.path.join(dest, r.names.orphan_dir)
             os.makedirs(folder, exist_ok=True)
-            for o in r.orphans:
+            for o in orphans:
                 res = save_orphan(disk, g, o, folder, r.names.orphan_file)
                 if res:
                     path, size, when, status = res
                     saved += 1
                     yield OrphanRecovered(os.path.relpath(path, dest), size, when, status, o.method)
-        yield RecoverFinished(ok, warned, saved, len(r.orphans), disk.bad_sectors)
+        yield RecoverFinished(ok, warned, saved, len(orphans), disk.bad_sectors)

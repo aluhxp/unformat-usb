@@ -11,3 +11,4 @@ dist/
 *.pkl
 *.csv
 recuperado*/
+*.egg-info/
