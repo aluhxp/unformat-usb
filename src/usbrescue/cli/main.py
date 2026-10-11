@@ -7,6 +7,7 @@ import sys
 import time
 
 from ..core import model as ev
+from ..core.diagnose import diagnose
 from ..core.session import Session, UnsafeDestination
 from ..core.util import fmt_size
 
@@ -38,6 +39,32 @@ ORPHAN_STATUS = {
 }
 
 
+VERDICTS = {
+    "names_and_structure": "Buenas noticias: la carpeta raiz antigua sigue ahi. Se pueden recuperar "
+                           "las carpetas con sus nombres.",
+    "structure": "La tabla FAT antigua sobrevivio: se puede reconstruir el arbol de carpetas y los "
+                 "archivos fragmentados. Los nombres de las carpetas de primer nivel se perdieron.",
+    "scan_needed": "El formateo borro la raiz y la tabla FAT. Hace falta el escaneo completo para "
+                   "saber que se puede recuperar.",
+    "looks_empty": "Todo lo que se miro esta vacio. O el disco no tenia datos, o se borraron al "
+                   "formatear (formateo completo, o TRIM en un SSD). El escaneo completo lo confirma.",
+}
+
+
+def print_diagnosis(d):
+    print(f"Formato actual: {d.current_fs or 'no reconocido'}")
+    print(f"Tabla FAT antigua: {'si, ' + str(d.fat_links) + ' enlaces' if d.old_fat else 'no'}")
+    if d.old_root:
+        print(f"Raiz antigua: si, {len(d.root_folders)} carpetas y {d.root_files} archivos")
+        for name in d.root_folders[:30]:
+            print(f"    {name}/")
+    else:
+        print("Raiz antigua: no")
+    print(f"Bloques vacios en la muestra: {d.blank_fraction:.0%}")
+    print()
+    print(VERDICTS[d.verdict])
+
+
 def progress(label, done, total, t0):
     pct = 100.0 * done / total if total else 100.0
     el = time.time() - t0
@@ -60,6 +87,8 @@ def main(argv=None):
                     help="no buscar archivos sin carpeta (los que estaban sueltos en la raiz)")
     ap.add_argument("--solo-huerfanos", action="store_true",
                     help="extraer solo los archivos sin carpeta, sin copiar el resto")
+    ap.add_argument("--diagnostico", action="store_true",
+                    help="revisar en segundos que dejo el formateo, sin escanear")
     args = ap.parse_args(argv)
 
     try:
@@ -68,6 +97,10 @@ def main(argv=None):
     except PermissionError:
         print("Sin permiso para leer el origen. Ejecutalo con sudo.")
         return 1
+
+    if args.diagnostico:
+        print_diagnosis(diagnose(session.disk))
+        return 0
 
     t0 = time.time()
     result = None
@@ -107,6 +140,8 @@ def main(argv=None):
     if r.orphans:
         print(f"Huerfanos (raiz y sin carpeta): {len(r.orphans)} candidatos, "
               f"{fmt_size(sum(o.nclus for o in r.orphans) * g.cs)} como maximo")
+    if r.root_recovered:
+        print("Raiz antigua recuperada: las carpetas de primer nivel conservan su nombre.")
     for old, new in r.renamed.items():
         print(f"Nombre original recuperado: {old} -> {new}")
 
