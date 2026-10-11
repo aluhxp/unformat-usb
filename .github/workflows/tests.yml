@@ -1,0 +1,16 @@
+name: tests
+
+on: [push, pull_request]
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # the test images are formatted with the real tools
+      - run: sudo apt-get update && sudo apt-get install -y exfatprogs dosfstools
+      - run: pip install pytest
+      - run: pytest -q
