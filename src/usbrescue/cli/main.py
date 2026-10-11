@@ -7,7 +7,9 @@ import sys
 import time
 
 from ..core import model as ev
+from ..core import imaging
 from ..core.diagnose import diagnose
+from ..core.reader import Source
 from ..core.session import Session, UnsafeDestination
 from ..core.util import fmt_size
 
@@ -78,6 +80,31 @@ def progress(label, done, total, t0):
     sys.stderr.flush()
 
 
+def make_image(source, image):
+    disk = Source(source)
+    free, fits, _ = imaging.space_check(disk.size, os.path.dirname(os.path.abspath(image)))
+    if not fits and not os.path.exists(image):
+        print(f"No hay espacio para la copia: hacen falta {fmt_size(disk.size)} y hay {fmt_size(free)} libres.")
+        return 1
+    print(f"Copiando {source} ({fmt_size(disk.size)}) a {image}")
+    t0, start, finished = time.time(), None, None
+    for e in imaging.make_image(disk, source, image):
+        if isinstance(e, imaging.ImageFinished):
+            finished = e
+        else:
+            start = e.done if start is None else start      # a resumed copy starts part-way
+            el = time.time() - t0
+            speed = (e.done - start) / el / 1e6 if el > 0 else 0
+            sys.stderr.write(f"\r{'Reintentando' if e.retrying else 'Copiando'}: "
+                             f"{100.0 * e.done / e.total:5.1f}%  {speed:6.1f} MB/s  "
+                             f"ilegible: {fmt_size(e.bad_bytes)}   ")
+            sys.stderr.flush()
+    sys.stderr.write("\n")
+    disk.close()
+    print(f"Copia terminada. Ilegible: {fmt_size(finished.bad_bytes)}. Ya puedes desconectar el origen.")
+    return 0
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(
         description="Recupera carpetas y archivos de un pendrive FAT32/exFAT formateado.")
@@ -91,9 +118,25 @@ def main(argv=None):
                     help="no buscar archivos sin carpeta (los que estaban sueltos en la raiz)")
     ap.add_argument("--solo-huerfanos", action="store_true",
                     help="extraer solo los archivos sin carpeta, sin copiar el resto")
+    ap.add_argument("--imagen", metavar="ARCHIVO",
+                    help="copiar primero el origen a este archivo y recuperar desde la copia "
+                         "(tolera sectores danados; si se interrumpe, se reanuda)")
     ap.add_argument("--diagnostico", action="store_true",
                     help="revisar en segundos que dejo el formateo, sin escanear")
     args = ap.parse_args(argv)
+
+    if args.imagen:
+        try:
+            status = make_image(args.origen, args.imagen)
+        except PermissionError:
+            print("Sin permiso para leer el origen. Ejecutalo con sudo.")
+            return 1
+        except UnsafeDestination:
+            print("La copia no puede guardarse en el mismo dispositivo que el origen.")
+            return 1
+        if status:
+            return status
+        args.origen = args.imagen
 
     try:
         session = Session(args.origen, include_deleted=args.borrados, fs_type=args.tipo,
