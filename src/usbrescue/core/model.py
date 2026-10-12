@@ -37,6 +37,8 @@ class Names:
     lost_parent: str = "_LOST_PARENT"
     orphan_dir: str = "_ROOT_AND_ORPHANS"
     orphan_file: str = "orphan_{}"
+    photo_label: str = "photo {}"       # a photo named by when it was taken
+    link_label: str = "link {}"         # a note that is just a web address
 
 
 # ---------------------------------------------------------------- events
@@ -132,6 +134,7 @@ class RecoverFinished:
     orphans_saved: int
     orphans_found: int
     bad_sectors: int
+    orphans_duplicate: int = 0      # left out: same content as a file already rescued
 
 
 @dataclass

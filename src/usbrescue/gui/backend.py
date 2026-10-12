@@ -29,7 +29,8 @@ def fmt_size(n):
 
 
 NAMES = ev.Names(unnamed_folder="Carpeta sin nombre {}", lost_parent="Carpetas sueltas",
-                 orphan_dir="Archivos sin carpeta", orphan_file="archivo_{}")
+                 orphan_dir="Archivos sin carpeta", orphan_file="archivo_{}",
+                 photo_label="foto {}", link_label="enlace {}")
 
 
 IMAGE_TYPES = ("jpg", "jpeg", "png", "gif", "bmp", "webp")

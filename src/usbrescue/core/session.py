@@ -3,6 +3,7 @@
 Both steps are generators of events (see model.py), so a command line or a
 window can show what is happening while it happens."""
 
+import hashlib
 import os
 import stat
 
@@ -317,14 +318,85 @@ class Session:
             warned += bool(warnings)
             yield FileRecovered(os.path.relpath(target, dest), en.size, en.mtime, warnings, method)
 
-        saved = 0
+        saved, duplicate = 0, 0
         if orphans:
             folder = os.path.join(dest, self.names.orphan_dir)
             os.makedirs(folder, exist_ok=True)
-            for o in orphans:
-                res = save_orphan(disk, g, o, folder, self.names.orphan_file)
+            twins = _Twins(self)
+            found, covered_to = len(orphans), 0
+            for o in orphans:               # in disk order
+                if o.size is not None and o.cluster < covered_to:
+                    # text inside a file just rescued by its signature (the
+                    # readable tail of a PDF, say): part of that file, not a new one
+                    found -= 1
+                    continue
+                res = save_orphan(disk, g, o, folder, self.names)
                 if res:
                     path, size, when, status = res
+                    if not o.exact and status in ("verified", "pdf_valid", "png_complete"):
+                        # only a file whose end is known for sure covers what follows it
+                        covered_to = max(covered_to, o.cluster + (size + g.cs - 1) // g.cs)
+                    if twins.seen_before(path, size):
+                        os.remove(path)     # the same file is already among the rescued
+                        duplicate += 1
+                        continue
                     saved += 1
                     yield OrphanRecovered(os.path.relpath(path, dest), size, when, status, o.method)
-        yield RecoverFinished(ok, warned, saved, len(orphans), disk.bad_sectors)
+        else:
+            found = 0
+        yield RecoverFinished(ok, warned, saved, found, disk.bad_sectors, duplicate)
+
+
+def _hash_file(path):
+    h = hashlib.sha1()
+    with open(path, "rb") as f:
+        for block in iter(lambda: f.read(COPY_BLOCK), b""):
+            h.update(block)
+    return h.digest()
+
+
+class _Twins:
+    """Spots a file without a folder that is a copy of one already known: a
+    file in a folder, or an earlier file without one. Sizes are compared
+    first, so content is only read when two files could really be the same."""
+
+    def __init__(self, session):
+        self.session = session
+        self.by_size = {}                   # size -> [entry of a file in a folder]
+        for _, en, _, _ in session.result.plans:
+            if en.size and en.cluster >= 2:
+                self.by_size.setdefault(en.size, []).append(en)
+        self.known = {}                     # entry key -> digest
+        self.loose = {}                     # size -> {digest or None: path}
+
+    def _hash_entry(self, en):
+        key = file_key(en)
+        if key not in self.known:
+            s = self.session
+            g = s.geometry
+            runs, _ = file_plan(en, g, g.fat)
+            valid = en.size if en.valid is None else min(en.valid, en.size)
+            h, got = hashlib.sha1(), 0
+            for block in iter_runs(s.disk, g, runs, valid):
+                h.update(block)
+                got += len(block)
+            h.update(b"\x00" * (en.size - got))    # the rest of the file is zeros
+            self.known[key] = h.digest()
+        return self.known[key]
+
+    def seen_before(self, path, size):
+        if not size:
+            return False
+        in_folders = self.by_size.get(size, [])
+        earlier = self.loose.setdefault(size, {})
+        if not in_folders and not earlier:
+            earlier[None] = path            # nothing of this size yet: no need to read it
+            return False
+        digest = _hash_file(path)
+        if None in earlier:                 # the earlier one of this size was never read
+            first = earlier.pop(None)
+            earlier[_hash_file(first)] = first
+        if digest in earlier or any(self._hash_entry(en) == digest for en in in_folders):
+            return True
+        earlier[digest] = path
+        return False

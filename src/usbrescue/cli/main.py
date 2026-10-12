@@ -14,7 +14,8 @@ from ..core.session import Session, UnsafeDestination
 from ..core.util import fmt_size
 
 NAMES = ev.Names(unnamed_folder="CARPETA_SIN_NOMBRE_{}", lost_parent="_HUERFANAS",
-                 orphan_dir="_RAIZ_Y_HUERFANOS", orphan_file="huerfano_{}")
+                 orphan_dir="_RAIZ_Y_HUERFANOS", orphan_file="huerfano_{}",
+                 photo_label="foto {}", link_label="enlace {}")
 WARNINGS = {
     "no_data": "sin datos",
     "fragmented": "fragmentado: puede estar danado",
@@ -231,6 +232,8 @@ def main(argv=None):
     if f.orphans_found:
         print(f"Huerfanos guardados en {NAMES.orphan_dir}: {f.orphans_saved} (de {f.orphans_found} "
               "candidatos). Entre ellos estan los archivos de la raiz, sin su nombre original.")
+    if f.orphans_duplicate:
+        print(f"{f.orphans_duplicate} huerfano(s) eran copia de un archivo ya recuperado y no se repiten.")
     if r.unnamed_tops:
         print(f"{r.unnamed_tops} carpeta(s) de primer nivel no conservaron su nombre "
               "(CARPETA_SIN_NOMBRE_<n>); su contenido si.")

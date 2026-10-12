@@ -16,6 +16,7 @@ import re
 import struct
 import zipfile
 
+from .metadata import describe
 from .oldfat import to_runs
 from .util import sanitize, u32
 
@@ -255,10 +256,10 @@ def zip_identify(path):
     return ext, title, when, ok
 
 
-def save_orphan(disk, g, o, folder, file_pattern):
+def save_orphan(disk, g, o, folder, names):
     """Writes the orphan and returns (path, size, date, status), or None when
     it turned out not to be a usable file."""
-    stem = file_pattern.format(o.cluster)
+    stem = names.orphan_file.format(o.cluster)
     tmp = os.path.join(folder, stem + ".part")
     with open(tmp, "wb") as out:
         copy_runs(disk, g, o.runs, o.nclus * g.cs, out)
@@ -297,9 +298,12 @@ def save_orphan(disk, g, o, folder, file_pattern):
         return None
     if status is None:
         status = o.status or ("chain_unverified" if o.exact else "size_approx")
+    # what the file holds often says what it is: a title, a date, a first line
+    label, taken = describe(tmp, ext, title, names.photo_label, names.link_label)
+    when = when or taken
     name = stem
-    if title:
-        name += " - " + sanitize(title)[:80]
+    if label:
+        name += " - " + sanitize(label)
     dest = os.path.join(folder, f"{name}.{ext}")
     os.replace(tmp, dest)
     if when:
