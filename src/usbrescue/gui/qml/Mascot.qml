@@ -24,16 +24,29 @@ Item {
         }
     }
     Rectangle {
-        // mouth: a smile is a rounded bar; "sorry" and "working" flatten it
-        x: (root.mood === "happy" ? 10 : 12) * unit
+        // mouth: a flat bar when calm, working or sorry
+        visible: root.mood !== "happy"
+        x: 12 * unit
         y: 25.5 * unit
-        width: (root.mood === "happy" ? 10 : 6) * unit
-        height: (root.mood === "happy" ? 4.5 : 1.8) * unit
+        width: 6 * unit
+        height: 1.8 * unit
         radius: height / 2
-        bottomLeftRadius: root.mood === "happy" ? 5 * unit : height / 2
-        bottomRightRadius: root.mood === "happy" ? 5 * unit : height / 2
-        topLeftRadius: root.mood === "happy" ? unit : height / 2
-        topRightRadius: root.mood === "happy" ? unit : height / 2
         color: Theme.sunInk
+    }
+    Item {
+        // a smile: the lower half of a circle
+        visible: root.mood === "happy"
+        x: 10 * unit
+        y: 25 * unit
+        width: 10 * unit
+        height: 4.75 * unit
+        clip: true
+        Rectangle {
+            y: -parent.height
+            width: parent.width
+            height: parent.height * 2
+            radius: width / 2
+            color: Theme.sunInk
+        }
     }
 }

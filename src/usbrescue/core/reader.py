@@ -84,8 +84,19 @@ exec /usr/bin/osascript -e 'text returned of (display dialog "{text}" default an
 def helper_command():
     """How to start the helper with privileges on this system: (command, env).
     Linux asks with pkexec; macOS with its own password window, through
-    sudo's askpass. A packaged program runs the helper as itself (--helper)."""
-    if getattr(sys, "frozen", False):
+    sudo's askpass. A packaged program runs the helper as itself (--helper),
+    except on Linux (see below)."""
+    if getattr(sys, "frozen", False) and sys.platform.startswith("linux"):
+        # An AppImage lives in a mount only its user can open, not root. The
+        # helper needs nothing but Python's standard library, so a copy of it
+        # runs with the system's own Python.
+        import shutil
+        import tempfile
+        folder = tempfile.mkdtemp(prefix="unformat-usb-")
+        helper = os.path.join(folder, "helper.py")
+        shutil.copy(os.path.join(sys._MEIPASS, "usbrescue", "helper.py"), helper)
+        run_helper = ["/usr/bin/python3", "-I", helper]
+    elif getattr(sys, "frozen", False):
         run_helper = [sys.executable, "--helper"]
     else:
         helper = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "helper.py")

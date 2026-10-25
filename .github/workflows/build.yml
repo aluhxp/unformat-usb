@@ -1,6 +1,6 @@
 name: build
 
-# the Windows program on every push to main, kept for two weeks to try out;
+# the Windows, macOS and Linux programs on every push to main, kept for two weeks to try out;
 # a tag like v0.2.0 also attaches it to a release
 on:
   push:
@@ -19,9 +19,10 @@ jobs:
       - run: pip install -e ".[gui,dev]" pyinstaller
       # --uac-admin: reading a whole drive needs an administrator, so Windows
       # asks once when the program opens
+      - run: python tools/win_version.py version.txt
       - run: >
           pyinstaller --noconfirm --onefile --windowed --uac-admin
-          --name UnformatUSB
+          --name UnformatUSB --version-file version.txt --icon packaging/icon.ico
           --add-data "src/usbrescue/gui/qml;usbrescue/gui/qml"
           --add-data "src/usbrescue/gui/i18n;usbrescue/gui/i18n"
           packaging/unformat_usb_main.py
@@ -98,7 +99,7 @@ jobs:
       - run: >
           pyinstaller --noconfirm --windowed
           --name UnformatUSB
-          --osx-bundle-identifier io.github.aluhxp.unformatusb
+          --osx-bundle-identifier io.github.aluhxp.unformatusb --icon packaging/icon.icns
           --add-data "src/usbrescue/gui/qml:usbrescue/gui/qml"
           --add-data "src/usbrescue/gui/i18n:usbrescue/gui/i18n"
           packaging/unformat_usb_main.py
@@ -119,10 +120,54 @@ jobs:
           path: dist/UnformatUSB-macOS.zip
           retention-days: 14
 
-  # one release with both programs, only once both were built and checked
+  linux:
+    # the oldest supported Ubuntu, so the AppImage runs on older systems too
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3 file
+      - run: pip install -e ".[gui,dev]" pyinstaller
+      # helper.py goes in as a plain file: as root it runs with the system's Python
+      - run: >
+          pyinstaller --noconfirm --windowed
+          --name UnformatUSB
+          --add-data "src/usbrescue/gui/qml:usbrescue/gui/qml"
+          --add-data "src/usbrescue/gui/i18n:usbrescue/gui/i18n"
+          --add-data "src/usbrescue/helper.py:usbrescue"
+          packaging/unformat_usb_main.py
+      - name: Make the AppImage
+        run: |
+          mkdir -p AppDir/usr/lib
+          cp -r dist/UnformatUSB AppDir/usr/lib/unformat-usb
+          cp packaging/linux/AppRun AppDir/AppRun
+          cp packaging/linux/unformat-usb.desktop AppDir/
+          cp packaging/icon.png AppDir/unformat-usb.png
+          curl -sSL -o appimagetool https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool
+          ARCH=x86_64 ./appimagetool --appimage-extract-and-run AppDir dist/UnformatUSB-x86_64.AppImage
+      - name: Check the program on a disk image
+        env:
+          QT_QPA_PLATFORM: offscreen
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+        run: |
+          python tools/ci_make_test_drive.py "$RUNNER_TEMP/drive.img"
+          dist/UnformatUSB-x86_64.AppImage --self-test \
+            "$RUNNER_TEMP/drive.img" "$RUNNER_TEMP/out" "$RUNNER_TEMP/image.json" || status=$?
+          cat "$RUNNER_TEMP/image.json"
+          exit ${status:-0}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: UnformatUSB-linux
+          path: dist/UnformatUSB-x86_64.AppImage
+          retention-days: 14
+
+  # one release with every program, only once both were built and checked
   release:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [windows, macos]
+    needs: [windows, macos, linux]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -138,3 +183,4 @@ jobs:
           files: |
             dist/UnformatUSB.exe
             dist/UnformatUSB-macOS.zip
+            dist/UnformatUSB-x86_64.AppImage

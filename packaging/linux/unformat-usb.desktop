@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Unformat USB
+Comment=Get back the files of a USB drive formatted by mistake
+Comment[es]=Recupera los archivos de un pendrive formateado por error
+Comment[pt_BR]=Recupere os arquivos de um pendrive formatado por engano
+Exec=UnformatUSB
+Icon=unformat-usb
+Categories=Utility;System;
+Keywords=recover;recovery;format;usb;pendrive;sd;exfat;fat32;
+Terminal=false
