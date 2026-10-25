@@ -12,8 +12,8 @@ import time
 from PySide6.QtCore import Property, QObject, QTimer, QUrl, Signal, Slot
 from PySide6.QtGui import QDesktopServices
 
-from ..cli.main import METHODS, ORPHAN_STATUS, WARNINGS
-from ..core import imaging
+from ..cli.main import KIND_WORDS, METHODS, ORPHAN_STATUS, WARNINGS
+from ..core import imaging, naming
 from ..core import model as ev
 from ..core.diagnose import diagnose
 from ..core.orphans import looks_text
@@ -30,7 +30,15 @@ def fmt_size(n):
 
 NAMES = ev.Names(unnamed_folder="Carpeta sin nombre {}", lost_parent="Carpetas sueltas",
                  orphan_dir="Archivos sin carpeta", orphan_file="archivo_{}",
-                 photo_label="foto {}", link_label="enlace {}")
+                 photo_label="foto {}", link_label="enlace {}", text_pieces="Trozos de texto")
+
+
+REPORT = "_informe_recuperacion.csv"
+NAMES_LOG = "_cambios_de_nombre.json"
+
+
+def label_name(kind, years, theme):
+    return naming.compose(KIND_WORDS[kind], years, theme)
 
 
 IMAGE_TYPES = ("jpg", "jpeg", "png", "gif", "bmp", "webp")
@@ -83,7 +91,8 @@ class Backend(QObject):
             needsPermission=False, folderId=-2, folderName="", files=[], filesHidden=0,
             preview={},
             recProgress=0.0, recEta=-1, recSpeed=0.0, recCurrent="", recDone=0, recTotal=0,
-            sumOk=0, sumWarned=0, sumOrphans=0, sumUnnamed=0, destPath="", reportPath="")
+            sumOk=0, sumWarned=0, sumOrphans=0, sumUnnamed=0, destPath="", reportPath="",
+            names=[], namesBusy=False, namesError="", renamed=0)
 
     def _set(self, **values):
         self._s.update(values)
@@ -274,7 +283,7 @@ class Backend(QObject):
 
     def _copy(self, dest, kind, **options):
         os.makedirs(dest, exist_ok=True)
-        report = os.path.join(dest, "_informe_recuperacion.csv")
+        report = os.path.join(dest, REPORT)
         new = not os.path.exists(report) or not os.path.getsize(report)
         with open(report, "a", newline="", encoding="utf-8") as fh:
             w = csv.writer(fh)
@@ -340,6 +349,10 @@ class Backend(QObject):
                                currentFiles=e.current_files)
             elif kind == "report":
                 updates.update(reportPath=e)
+            elif kind == "names":
+                updates.update(namesBusy=False, names=[
+                    dict(current=os.sep.join(x.folder), name=x.name, source=x.source,
+                         example=x.example, files=x.files, checked=True) for x in e])
             elif kind == "image_path":
                 updates.update(imagePath=e)
             elif kind == "image":
@@ -504,6 +517,65 @@ class Backend(QObject):
             if looks_text(head):
                 info.update(kind="text", text=head.decode("utf-8", "replace"))
         self._set(preview=info)
+
+    # ------------------------------------------------- names for folders
+
+    @Slot()
+    def suggestNames(self):
+        """Reads the rescued files (on this computer, not the drive) and
+        proposes a name for each folder that lost its own."""
+        dest = self._s["destPath"]
+        self._set(phase="naming", namesBusy=True, names=[], namesError="")
+
+        def work():
+            items = naming.items_from_folder(dest, skip={REPORT, NAMES_LOG})
+            found = naming.suggest(items, naming.unnamed_folders(items, NAMES), label_name)
+            self._events.put(("names", found))
+
+        self._run(work)
+
+    def _edit_name(self, i, **change):
+        rows = list(self._s["names"])
+        if 0 <= i < len(rows):
+            rows[i] = dict(rows[i], **change)
+            self._set(names=rows)
+
+    @Slot(int, bool)
+    def setNameChecked(self, i, value):
+        self._edit_name(i, checked=value)
+
+    @Slot("QVariantList")
+    def applyNames(self, typed):
+        """Renames only the folders left ticked, with the names as typed."""
+        dest = self._s["destPath"]
+        rows = [dict(r, name=str(t).strip()) for r, t in zip(self._s["names"], typed)]
+        rows = [r for r in rows if r["checked"] and sanitize(r["name"]).strip()]
+        wanted = [sanitize(r["name"]).lower() for r in rows]
+        if len(set(wanted)) < len(wanted):
+            self._set(namesError="twice")
+            return
+        try:
+            done = naming.rename(dest, [(r["current"], r["name"]) for r in rows],
+                                 os.path.join(dest, NAMES_LOG), os.path.join(dest, REPORT))
+        except naming.RenameError as e:
+            # the ones before it are done; show what is left
+            self._set(namesError="exists:" + os.path.basename(str(e)))
+            return
+        except OSError as e:
+            self._set(namesError="io:" + str(e))
+            return
+        self._set(phase="done", renamed=self._s["renamed"] + len(done),
+                  sumUnnamed=max(0, self._s["sumUnnamed"] - len(done)), names=[])
+
+    @Slot()
+    def undoNames(self):
+        dest = self._s["destPath"]
+        n = naming.undo(dest, os.path.join(dest, NAMES_LOG), os.path.join(dest, REPORT))
+        self._set(renamed=0, sumUnnamed=self._s["sumUnnamed"] + n)
+
+    @Slot()
+    def closeNames(self):
+        self._set(phase="done", names=[], namesError="")
 
     @Slot(bool)
     def setWithOrphans(self, value):

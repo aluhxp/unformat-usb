@@ -8,6 +8,7 @@ import time
 
 from ..core import model as ev
 from ..core import imaging
+from ..core import naming
 from ..core.diagnose import diagnose
 from ..core.reader import Source
 from ..core.session import Session, UnsafeDestination
@@ -15,7 +16,7 @@ from ..core.util import fmt_size
 
 NAMES = ev.Names(unnamed_folder="CARPETA_SIN_NOMBRE_{}", lost_parent="_HUERFANAS",
                  orphan_dir="_RAIZ_Y_HUERFANOS", orphan_file="huerfano_{}",
-                 photo_label="foto {}", link_label="enlace {}")
+                 photo_label="foto {}", link_label="enlace {}", text_pieces="_TROZOS_DE_TEXTO")
 WARNINGS = {
     "no_data": "sin datos",
     "fragmented": "fragmentado: puede estar danado",
@@ -40,6 +41,65 @@ ORPHAN_STATUS = {
     "text": "texto sin carpeta: revisar",
     "text_cut": "texto cortado: revisar",
 }
+
+# names proposed from what a folder holds (these become folder names: accents are fine)
+KIND_WORDS = {
+    "photos": "Fotos", "videos": "Videos", "music": "Música", "documents": "Documentos",
+    "spreadsheets": "Hojas de cálculo", "presentations": "Presentaciones",
+    "programs": "Programas", "disk_images": "Imágenes de disco", "archives": "Comprimidos",
+    "code": "Código", "books": "Libros", "fonts": "Fuentes", "mixed": "Varios",
+}
+REPORT = "_informe_recuperacion.csv"
+NAMES_LOG = "_cambios_de_nombre.json"
+
+
+def spanish_label(kind, years, theme):
+    return naming.compose(KIND_WORDS[kind], years, theme)
+
+
+def name_suggestions(dest):
+    items = naming.items_from_folder(dest, skip={REPORT, NAMES_LOG, "_informe_huerfanos.csv"})
+    return naming.suggest(items, naming.unnamed_folders(items, NAMES), spanish_label)
+
+
+def print_suggestions(found):
+    for i, s in enumerate(found, 1):
+        how = (f"nombre original, aparece en la ruta {s.example}"
+               if s.source == "original" else "sugerido por su contenido")
+        print(f"  {i:3}. {os.sep.join(s.folder)}  ->  {s.name}   ({s.files} archivos; {how})")
+
+
+def review_names(dest):
+    """Shows the proposed names and renames only what the person accepts."""
+    found = name_suggestions(dest)
+    if not found:
+        print("No hay carpetas sin nombre en", dest)
+        return 0
+    print(f"Nombres propuestos para {len(found)} carpeta(s):")
+    print_suggestions(found)
+    answer = input("\n¿Cuáles renombro? (t = todas, 1,3,5 = esas, Enter = ninguna): ").strip().lower()
+    if answer in ("t", "todas"):
+        chosen = found
+    else:
+        picks = {int(x) for x in answer.replace(" ", "").split(",") if x.isdigit()}
+        chosen = [s for i, s in enumerate(found, 1) if i in picks]
+    if not chosen:
+        print("No se cambió nada.")
+        return 0
+    try:
+        done = naming.rename(dest, [(s.folder, s.name) for s in chosen],
+                             os.path.join(dest, NAMES_LOG), os.path.join(dest, REPORT))
+    except naming.RenameError as e:
+        print(f"No se pudo renombrar: ya existe o falta {e}. Lo anterior quedó hecho.")
+        return 1
+    print(f"Renombradas {len(done)}. Para deshacerlo: usbrescue --deshacer-nombres {dest}")
+    return 0
+
+
+def undo_names(dest):
+    n = naming.undo(dest, os.path.join(dest, NAMES_LOG), os.path.join(dest, REPORT))
+    print(f"Deshechos {n} cambio(s) de nombre." if n else "No había cambios de nombre que deshacer.")
+    return 0
 
 
 VERDICTS = {
@@ -109,8 +169,8 @@ def make_image(source, image):
 def main(argv=None):
     ap = argparse.ArgumentParser(
         description="Recupera carpetas y archivos de un pendrive FAT32/exFAT formateado.")
-    ap.add_argument("origen", help="imagen del pendrive (.img) o dispositivo (/dev/sdX)")
-    ap.add_argument("destino", help="carpeta donde guardar lo recuperado (en OTRO disco)")
+    ap.add_argument("origen", nargs="?", help="imagen del pendrive (.img) o dispositivo (/dev/sdX)")
+    ap.add_argument("destino", nargs="?", help="carpeta donde guardar lo recuperado (en OTRO disco)")
     ap.add_argument("--tipo", choices=["fat32", "exfat"], help="forzar el tipo de sistema de archivos")
     ap.add_argument("--borrados", action="store_true",
                     help="incluir archivos que ya estaban borrados antes del formateo")
@@ -124,7 +184,19 @@ def main(argv=None):
                          "(tolera sectores danados; si se interrumpe, se reanuda)")
     ap.add_argument("--diagnostico", action="store_true",
                     help="revisar en segundos que dejo el formateo, sin escanear")
+    ap.add_argument("--nombres", metavar="CARPETA",
+                    help="proponer nombres para las carpetas recuperadas sin nombre y "
+                         "renombrar las que elijas")
+    ap.add_argument("--deshacer-nombres", metavar="CARPETA",
+                    help="volver a poner los nombres anteriores a --nombres")
     args = ap.parse_args(argv)
+
+    if args.nombres:
+        return review_names(args.nombres)
+    if args.deshacer_nombres:
+        return undo_names(args.deshacer_nombres)
+    if not args.origen or not args.destino:
+        ap.error("faltan el origen y el destino")
 
     if args.imagen:
         try:
@@ -203,7 +275,7 @@ def main(argv=None):
 
     os.makedirs(args.destino, exist_ok=True)
     report_path = os.path.join(args.destino, "_informe_huerfanos.csv" if args.solo_huerfanos
-                               else "_informe_recuperacion.csv")
+                               else REPORT)
     t0 = time.time()
     finished = None
     try:
@@ -234,9 +306,11 @@ def main(argv=None):
               "candidatos). Entre ellos estan los archivos de la raiz, sin su nombre original.")
     if f.orphans_duplicate:
         print(f"{f.orphans_duplicate} huerfano(s) eran copia de un archivo ya recuperado y no se repiten.")
-    if r.unnamed_tops:
+    if r.unnamed_tops and not args.solo_huerfanos:
         print(f"{r.unnamed_tops} carpeta(s) de primer nivel no conservaron su nombre "
-              "(CARPETA_SIN_NOMBRE_<n>); su contenido si.")
+              "(CARPETA_SIN_NOMBRE_<n>); su contenido si. Nombres propuestos:")
+        print_suggestions(name_suggestions(args.destino))
+        print(f"Nada se ha renombrado. Para elegir cuales aplicar: usbrescue --nombres {args.destino}")
     if f.bad_sectors:
         print(f"Atencion: {f.bad_sectors} sectores ilegibles (rellenados con ceros).")
     if not f.orphans_found:
