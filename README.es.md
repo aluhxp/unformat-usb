@@ -24,6 +24,8 @@ Funciona con pendrives y tarjetas en **exFAT** y **FAT32**.
 - **Linux**: `pip install "unformat-usb[gui] @ git+https://github.com/aluhxp/unformat-usb"` y luego `unformat-usb`. Te pedirá tu contraseña para leer el pendrive.
 - **macOS**: [UnformatUSB-macOS.zip](https://github.com/aluhxp/unformat-usb/releases/latest). La app aún no está firmada: la primera vez, haz clic derecho sobre ella y elige **Abrir**. Pide tu contraseña para leer la unidad.
 
+Las versiones para Windows se firmarán con el programa gratuito de SignPath Foundation (solicitud en curso). Ver la [Code signing policy](docs/code-signing.md) (política de firma de código, en inglés).
+
 ## Cuándo no se puede
 
 Hay que decirlo claro: si el pendrive se formateó en **modo completo** (escribe ceros en todo), si se usó mucho después del formateo, o si es un **disco SSD/NVMe** (el sistema borra los bloques libres con TRIM), puede que no quede nada que recuperar. Unformat USB te lo dirá en lugar de prometer lo que no puede.

@@ -24,6 +24,8 @@ Works with USB drives and cards formatted as **exFAT** and **FAT32**.
 - **Linux**: `pip install "unformat-usb[gui] @ git+https://github.com/aluhxp/unformat-usb"`, then run `unformat-usb`. It asks for your password to read the drive.
 - **macOS**: [UnformatUSB-macOS.zip](https://github.com/aluhxp/unformat-usb/releases/latest). The app is not signed yet: the first time, right-click it and choose **Open**. It asks for your password to read the drive.
 
+Windows releases are going to be signed through the free program of SignPath Foundation (application in progress). See the [Code signing policy](docs/code-signing.md).
+
 ## When it cannot help
 
 To be clear: after a **full format** (which writes zeros everywhere), heavy use after the format, or on an **SSD/NVMe** (the system erases free blocks with TRIM), there may be nothing left. Unformat USB tells you so instead of promising what it cannot do.
@@ -34,7 +36,7 @@ Unformat USB is free and will stay free. If it helped, the screen at the end of 
 
 [![Donate with PayPal](https://img.shields.io/badge/Donate-PayPal-0070ba?logo=paypal&logoColor=white)](https://www.paypal.com/donate/?business=aluhxp%40gmail.com&currency_code=USD&item_name=Unformat+USB)
 
-Privacy: the program sends nothing anywhere. See the [code signing policy](docs/code-signing.md).
+Privacy: the program sends nothing anywhere ([Code signing policy and privacy](docs/code-signing.md)).
 
 ---
 

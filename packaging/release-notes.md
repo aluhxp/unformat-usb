@@ -17,6 +17,8 @@
 - Quick option: only photos and videos, each in its folder.
 - English and Spanish.
 
+Windows releases are going to be signed through SignPath Foundation's free program: see the [Code signing policy](https://github.com/aluhxp/unformat-usb/blob/main/docs/code-signing.md).
+
 If it helped you, the last screen has a way to buy us a coffee. Thank you!
 
 ---
