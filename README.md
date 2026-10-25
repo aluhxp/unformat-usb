@@ -22,7 +22,7 @@ Works with USB drives and cards formatted as **exFAT** and **FAT32**.
 
 - **Windows**: [UnformatUSB.exe](https://github.com/aluhxp/unformat-usb/releases/latest). Windows asks for administrator rights when it opens: a whole drive cannot be read without them.
 - **Linux**: `pip install "unformat-usb[gui] @ git+https://github.com/aluhxp/unformat-usb"`, then run `unformat-usb`. It asks for your password to read the drive.
-- **macOS**: coming.
+- **macOS**: [UnformatUSB-macOS.zip](https://github.com/aluhxp/unformat-usb/releases/latest). The app is not signed yet: the first time, right-click it and choose **Open**. It asks for your password to read the drive.
 
 ## When it cannot help
 

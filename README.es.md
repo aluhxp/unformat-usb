@@ -22,7 +22,7 @@ Funciona con pendrives y tarjetas en **exFAT** y **FAT32**.
 
 - **Windows**: [UnformatUSB.exe](https://github.com/aluhxp/unformat-usb/releases/latest). Windows te pedirá permiso de administrador al abrirlo: sin él no se puede leer un pendrive completo.
 - **Linux**: `pip install "unformat-usb[gui] @ git+https://github.com/aluhxp/unformat-usb"` y luego `unformat-usb`. Te pedirá tu contraseña para leer el pendrive.
-- **macOS**: en preparación.
+- **macOS**: [UnformatUSB-macOS.zip](https://github.com/aluhxp/unformat-usb/releases/latest). La app aún no está firmada: la primera vez, haz clic derecho sobre ella y elige **Abrir**. Pide tu contraseña para leer la unidad.
 
 ## Cuándo no se puede
 
