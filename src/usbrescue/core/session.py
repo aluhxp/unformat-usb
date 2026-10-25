@@ -7,7 +7,7 @@ import hashlib
 import os
 import stat
 
-from . import fat32
+from . import fat32, rawdisk
 from .boot import read_boot
 from .clues import name_clues
 from .exfat import ExfatTree
@@ -37,6 +37,14 @@ def _whole_disk(dev):
 
 def check_destination(source_path, dest):
     """Writing recovered files onto the source would destroy what is left."""
+    if rawdisk.is_windows_drive(source_path):
+        number = rawdisk.windows_disk_number(source_path)
+        if number is not None and number in rawdisk.windows_disks_of_folder(dest):
+            raise UnsafeDestination(dest)
+        return
+    if rawdisk.is_mac_disk(source_path):
+        _check_mac_destination(source_path, dest)
+        return
     try:
         src = os.stat(source_path)
     except OSError:
@@ -47,6 +55,25 @@ def check_destination(source_path, dest):
     while not os.path.exists(probe):
         probe = os.path.dirname(probe)
     if _whole_disk(os.stat(probe).st_dev) == _whole_disk(src.st_rdev):
+        raise UnsafeDestination(dest)
+
+
+def _check_mac_destination(source_path, dest):
+    """/dev/rdisk4 or /dev/disk4s1 against the disk the folder is on."""
+    import plistlib
+    import re
+    import subprocess
+    disk = re.sub(r"^r", "", os.path.basename(source_path))
+    disk = re.match(r"disk\d+", disk).group(0)
+    probe = os.path.abspath(dest)
+    while not os.path.exists(probe):
+        probe = os.path.dirname(probe)
+    try:
+        info = plistlib.loads(subprocess.run(["diskutil", "info", "-plist", probe],
+                                             capture_output=True, timeout=10).stdout)
+    except (OSError, subprocess.TimeoutExpired, plistlib.InvalidFileException):
+        return
+    if info.get("ParentWholeDisk") == disk:
         raise UnsafeDestination(dest)
 
 

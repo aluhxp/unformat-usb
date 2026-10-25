@@ -6,7 +6,10 @@ import subprocess
 import sys
 import threading
 
+from . import rawdisk
 from .util import SECTOR
+
+O_BINARY = getattr(os, "O_BINARY", 0)      # Windows would otherwise translate line ends
 
 
 class Source:
@@ -19,16 +22,34 @@ class Source:
         self._open(path)
 
     def _open(self, path):
-        self.fd = os.open(path, os.O_RDONLY)
-        self.size = os.lseek(self.fd, 0, os.SEEK_END)
+        self.fd = os.open(path, os.O_RDONLY | O_BINARY)
+        self.size = rawdisk.size_of(self.fd, path)
+        # a whole drive on Windows or macOS reads only whole, aligned sectors
+        self.align = rawdisk.ALIGN if rawdisk.needs_alignment(path) else 1
+        self._seek_lock = None if hasattr(os, "pread") else threading.Lock()
 
     def close(self):
         os.close(self.fd)
 
+    def _pread(self, n, off):
+        if self._seek_lock is None:
+            return os.pread(self.fd, n, off)
+        with self._seek_lock:               # Windows has no pread: seek and read together
+            os.lseek(self.fd, off, os.SEEK_SET)
+            return os.read(self.fd, n)
+
     def _raw(self, off, n):
+        if self.align > 1:
+            start = off - off % self.align
+            end = min(-(-(off + n) // self.align) * self.align, self.size)
+            data = self._read_all(start, end - start)
+            return data[off - start:off - start + n]
+        return self._read_all(off, n)
+
+    def _read_all(self, off, n):
         out = bytearray()
         while len(out) < n:
-            c = os.pread(self.fd, n - len(out), off + len(out))
+            c = self._pread(n - len(out), off + len(out))
             if not c:
                 break
             out += c
