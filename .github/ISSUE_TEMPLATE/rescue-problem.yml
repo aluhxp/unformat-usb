@@ -1,0 +1,39 @@
+name: A rescue did not go well / Un rescate no salió bien
+description: Something failed, or files did not come back as expected.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for telling us. **Please don't attach your files or a copy of your drive**: they are private. A description is enough.
+        Gracias por avisar. **No adjuntes tus archivos ni una copia del pendrive**: son privados. Con la descripción basta.
+  - type: dropdown
+    id: system
+    attributes:
+      label: System / Sistema
+      options: [Windows, macOS, Linux]
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Unformat USB version / Versión
+      placeholder: "0.1.1"
+  - type: input
+    id: drive
+    attributes:
+      label: Drive and size / Unidad y tamaño
+      placeholder: "Kingston DataTraveler, 64 GB, exFAT"
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened / Qué pasó
+      description: How was it formatted, what did the program say, what is missing? / ¿Cómo se formateó, qué dijo el programa, qué falta?
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: Report lines (optional) / Líneas del informe (opcional)
+      description: A few lines of _recovery_report.csv, without private names if you prefer. / Algunas líneas del informe, sin nombres privados si prefieres.
+      render: text

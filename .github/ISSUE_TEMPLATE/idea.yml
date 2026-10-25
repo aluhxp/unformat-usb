@@ -1,0 +1,10 @@
+name: Idea or question / Idea o pregunta
+description: Something the program could do better, or a question.
+labels: ["idea"]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea or question / Tu idea o pregunta
+    validations:
+      required: true
