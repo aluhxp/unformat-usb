@@ -35,7 +35,7 @@ Hay que decirlo claro: si el pendrive se formateó en **modo completo** (escribe
 
 Unformat USB es gratis y lo va a seguir siendo. Si te ayudó, al terminar un rescate verás la opción de invitar un café. Es voluntario.
 
-[![Donar con PayPal](https://img.shields.io/badge/Donar-PayPal-0070ba?logo=paypal&logoColor=white)](https://www.paypal.com/donate/?business=aluhxp%40gmail.com&currency_code=USD&item_name=Unformat+USB)
+[![Donar con PayPal](https://img.shields.io/badge/Donar-PayPal-0070ba?logo=paypal&logoColor=white)](https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=aluhxp%40gmail.com&item_name=Support+Unformat+USB&currency_code=USD&no_shipping=1)
 
 Privacidad: el programa no envía nada a ningún lado. Ver la [política de firma de código](docs/code-signing.md) (en inglés).
 

@@ -4,7 +4,7 @@ import re
 import urllib.parse
 
 APP_NAME = "Unformat USB"
-VERSION = "0.1.1"
+VERSION = "0.1.2"
 
 # Voluntary donations. They are offered only after a rescue that worked,
 # never before and never in the way. Empty: the offer is not shown at all.
@@ -15,14 +15,16 @@ DONATION_MAX = 10000            # a typo like 5000000 should not reach PayPal
 
 
 def donation_url(amount=None):
-    """PayPal's donation page for the account, with the amount filled in."""
+    """A PayPal payment to the account, with the amount filled in (without
+    one, the person types it). PayPal's own Donate page refuses accounts from
+    some countries (Ecuador among them), so this is a plain payment."""
     if not PAYPAL_EMAIL:
         return ""
-    query = {"business": PAYPAL_EMAIL, "currency_code": DONATION_CURRENCY,
-             "item_name": f"{APP_NAME}"}
+    query = {"cmd": "_xclick", "business": PAYPAL_EMAIL, "item_name": f"Support {APP_NAME}",
+             "currency_code": DONATION_CURRENCY, "no_shipping": "1"}
     if amount:
         query["amount"] = f"{amount:.2f}"
-    return "https://www.paypal.com/donate/?" + urllib.parse.urlencode(query)
+    return "https://www.paypal.com/cgi-bin/webscr?" + urllib.parse.urlencode(query)
 
 
 def parse_amount(text):

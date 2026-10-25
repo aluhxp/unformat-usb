@@ -35,7 +35,7 @@ To be clear: after a **full format** (which writes zeros everywhere), heavy use 
 
 Unformat USB is free and will stay free. If it helped, the screen at the end of a rescue offers a way to buy us a coffee. It is optional.
 
-[![Donate with PayPal](https://img.shields.io/badge/Donate-PayPal-0070ba?logo=paypal&logoColor=white)](https://www.paypal.com/donate/?business=aluhxp%40gmail.com&currency_code=USD&item_name=Unformat+USB)
+[![Donate with PayPal](https://img.shields.io/badge/Donate-PayPal-0070ba?logo=paypal&logoColor=white)](https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=aluhxp%40gmail.com&item_name=Support+Unformat+USB&currency_code=USD&no_shipping=1)
 
 Privacy: the program sends nothing anywhere ([Code signing policy and privacy](docs/code-signing.md)).
 

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "unformat-usb"
-version = "0.1.1"
+version = "0.1.2"
 description = "Recover files from a quick-formatted FAT32/exFAT USB drive. Read-only on the source."
 requires-python = ">=3.10"
 license = {text = "GPL-3.0-or-later"}

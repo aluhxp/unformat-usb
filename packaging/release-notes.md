@@ -1,12 +1,10 @@
 **Formatted your USB drive by mistake? Unformat USB gets your folders and files back. Free, no limits, and it never writes to the drive.**
 
-## New in 0.1.1
+## New in 0.1.2
 
-- **Português**: the program and the web page now speak Portuguese too (Brazil).
-- **Linux**: a one-click AppImage, no installation needed.
-- The program has its own icon, and its own font (Nunito) on every system.
-- More room for the file list next to the preview.
-- The command line speaks English (and Spanish with `--lang es`).
+- The "Buy us a coffee" button works again: PayPal's Donate page refused the project's country, so it is now a plain PayPal payment.
+
+(0.1.1 brought Portuguese, the Linux AppImage, the program's icon and font, and the English command line.)
 
 ## Download
 

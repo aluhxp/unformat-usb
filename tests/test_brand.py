@@ -11,8 +11,9 @@ def test_no_account_means_no_offer(monkeypatch):
 def test_the_link_goes_to_the_account_with_the_amount(monkeypatch):
     monkeypatch.setattr(brand, "PAYPAL_EMAIL", "someone@example.com")
     url = urlparse(brand.donation_url(7.5))
-    assert (url.netloc, url.path) == ("www.paypal.com", "/donate/")
+    assert (url.netloc, url.path) == ("www.paypal.com", "/cgi-bin/webscr")
     q = parse_qs(url.query)
+    assert q["cmd"] == ["_xclick"]          # a payment: PayPal's Donate page refuses some countries
     assert q["business"] == ["someone@example.com"]
     assert (q["amount"], q["currency_code"]) == (["7.50"], ["USD"])
     assert "amount" not in parse_qs(urlparse(brand.donation_url()).query)
