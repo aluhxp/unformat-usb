@@ -3,11 +3,12 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "usbrescue"
+name = "unformat-usb"
 version = "0.1.0"
 description = "Recover files from a quick-formatted FAT32/exFAT USB drive. Read-only on the source."
 requires-python = ">=3.10"
 license = {text = "GPL-3.0-or-later"}
+readme = "README.md"
 classifiers = [
     "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Operating System :: POSIX :: Linux",
@@ -16,6 +17,9 @@ classifiers = [
     "Topic :: System :: Recovery Tools",
 ]
 dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/aluhxp/unformat-usb"
 
 [project.optional-dependencies]
 dev = ["pytest"]
@@ -31,7 +35,7 @@ rescatin = "usbrescue.gui.app:run"
 where = ["src"]
 
 [tool.setuptools.package-data]
-"usbrescue.gui" = ["qml/*"]
+"usbrescue.gui" = ["qml/*", "i18n/*.qm"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
