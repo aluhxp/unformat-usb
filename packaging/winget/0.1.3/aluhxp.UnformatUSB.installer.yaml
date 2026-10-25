@@ -1,13 +1,13 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.9.0.schema.json
 PackageIdentifier: aluhxp.UnformatUSB
-PackageVersion: 0.1.1
+PackageVersion: 0.1.3
 InstallerType: portable
 Commands:
 - UnformatUSB
 ReleaseDate: 2026-10-25
 Installers:
 - Architecture: x64
-  InstallerUrl: https://github.com/aluhxp/unformat-usb/releases/download/v0.1.1/UnformatUSB.exe
-  InstallerSha256: 9EBBAF3F47A9D72143EF951AE78606F98AB1170B3882781FDA320C1BA5EE1F7D
+  InstallerUrl: https://github.com/aluhxp/unformat-usb/releases/download/v0.1.3/UnformatUSB.exe
+  InstallerSha256: A3AEE0801D9A50D9854787046C4F5860C3A1F41F0A0056662F14107D9847611C
 ManifestType: installer
 ManifestVersion: 1.9.0
