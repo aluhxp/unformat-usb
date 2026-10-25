@@ -14,8 +14,14 @@ def formatted(tmp_path):
     return str(path)
 
 
+def system_language(monkeypatch, value):
+    for var in ("LC_ALL", "LC_MESSAGES", "LANGUAGE"):
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.setenv("LANG", value)
+
+
 def test_rescue_in_english(tmp_path, capsys, monkeypatch):
-    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    system_language(monkeypatch, "en_US.UTF-8")
     out = tmp_path / "out"
     assert cli.main([formatted(tmp_path), str(out)]) == 0
     said = capsys.readouterr().out
@@ -25,7 +31,7 @@ def test_rescue_in_english(tmp_path, capsys, monkeypatch):
 
 
 def test_rescue_in_spanish_from_the_system_language(tmp_path, capsys, monkeypatch):
-    monkeypatch.setenv("LANG", "es_PE.UTF-8")
+    system_language(monkeypatch, "es_PE.UTF-8")
     out = tmp_path / "out"
     assert cli.main([formatted(tmp_path), str(out), "--only-photos"]) == 0
     assert "Listo:" in capsys.readouterr().out
