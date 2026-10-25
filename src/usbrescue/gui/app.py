@@ -104,6 +104,10 @@ def self_test(app, source, dest, report):
 
 
 def run():
+    if "--helper" in sys.argv:
+        # the packaged program, started again with privileges to read a drive
+        from .. import helper
+        sys.exit(helper.main(sys.argv[sys.argv.index("--helper") + 1]))
     if "--self-test" in sys.argv:
         i = sys.argv.index("--self-test")
         source, dest, report = sys.argv[i + 1:i + 4]

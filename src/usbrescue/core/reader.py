@@ -76,6 +76,33 @@ class Source:
             return bytes(out)
 
 
+ASKPASS = """#!/bin/sh
+exec /usr/bin/osascript -e 'text returned of (display dialog "{text}" default answer "" with hidden answer with title "{title}" with icon caution)'
+"""
+
+
+def helper_command():
+    """How to start the helper with privileges on this system: (command, env).
+    Linux asks with pkexec; macOS with its own password window, through
+    sudo's askpass. A packaged program runs the helper as itself (--helper)."""
+    if getattr(sys, "frozen", False):
+        run_helper = [sys.executable, "--helper"]
+    else:
+        helper = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "helper.py")
+        run_helper = [sys.executable, helper]
+    if sys.platform == "darwin":
+        import tempfile
+        from ..brand import APP_NAME
+        folder = tempfile.mkdtemp(prefix="unformat-usb-")
+        askpass = os.path.join(folder, "askpass.sh")
+        with open(askpass, "w") as fh:
+            fh.write(ASKPASS.format(title=APP_NAME, text=f"{APP_NAME} needs an administrator password "
+                                    "to read the whole drive. It only reads it: nothing is written."))
+        os.chmod(askpass, 0o700)
+        return ["/usr/bin/sudo", "-A", "-k"] + run_helper, dict(os.environ, SUDO_ASKPASS=askpass)
+    return ["pkexec"] + run_helper, None
+
+
 class HelperSource(Source):
     """A drive this process may not open itself, read through the small
     privileged helper (see helper.py). The system asks the person for
@@ -87,9 +114,11 @@ class HelperSource(Source):
         super().__init__(path)
 
     def _open(self, path):
-        helper = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "helper.py")
-        command = self._command or ["pkexec", sys.executable, helper]
-        self.proc = subprocess.Popen(command + [path], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        command, env = self._command, None
+        if command is None:
+            command, env = helper_command()
+        self.proc = subprocess.Popen(command + [path], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                     env=env)
         head = self.proc.stdout.read(17)
         if len(head) < 17 or head[:5] != b"USBR1":
             self.close()

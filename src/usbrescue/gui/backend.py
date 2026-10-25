@@ -263,8 +263,8 @@ class Backend(QObject):
         d = self._device
         # a drive this process may not open is read through the helper,
         # which makes the system ask for the password
-        if not d.readable and not sys.platform.startswith("linux"):
-            # Windows and macOS: only an administrator may read a whole drive
+        if not d.readable and sys.platform == "win32":
+            # Windows: only an administrator may read a whole drive
             raise PermissionError(d.path)
         disk = None if d.readable else HelperSource(d.path)
         self._session = Session(d.path, names=self.names, disk=disk)
