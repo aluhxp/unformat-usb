@@ -1,21 +1,32 @@
 """Builds FAT32 test images: the real mkfs.vfat formats a file, and this
 module writes folders and files into it."""
 
+import os
 import shutil
 import struct
 import subprocess
 
-MKFS = shutil.which("mkfs.vfat") or "/usr/sbin/mkfs.vfat"
+from . import recorded
+
+MKFS = shutil.which("mkfs.vfat") or ("/usr/sbin/mkfs.vfat" if os.path.exists("/usr/sbin/mkfs.vfat") else None)
 EOC = 0x0FFFFFFF
 DATE = (2021 - 1980) << 9 | 3 << 5 | 14
 TIME = 10 << 11 | 30 << 5
 
 
-def mkfs(path, size_mb=64):
-    with open(path, "ab") as f:
-        f.truncate(size_mb * 1024 * 1024)
+def real_mkfs(path):
     subprocess.run([MKFS, "-F", "32", "-s", "8", "-S", "512", str(path)],
                    check=True, capture_output=True)
+
+
+def mkfs(path, size_mb=64):
+    """The real mkfs.vfat, or what it wrote replayed (see recorded.py)."""
+    if MKFS and not os.environ.get("USBRESCUE_REPLAY_MKFS"):
+        with open(path, "ab") as f:
+            f.truncate(size_mb * 1024 * 1024)
+        real_mkfs(path)
+    else:
+        recorded.replay(recorded.name_of("fat32", size_mb), path, size_mb)
 
 
 class _Dir:

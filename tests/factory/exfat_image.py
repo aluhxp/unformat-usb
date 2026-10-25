@@ -1,24 +1,39 @@
 """Builds exFAT test images without mounting anything: the real mkfs.exfat
 formats a file, and this module writes folders and files into it."""
 
+import os
 import shutil
 import struct
 import subprocess
 
-MKFS = shutil.which("mkfs.exfat") or "/usr/sbin/mkfs.exfat"
-FSCK = shutil.which("fsck.exfat") or "/usr/sbin/fsck.exfat"
+from . import recorded
+
+MKFS = shutil.which("mkfs.exfat") or ("/usr/sbin/mkfs.exfat" if os.path.exists("/usr/sbin/mkfs.exfat") else None)
+FSCK = shutil.which("fsck.exfat") or ("/usr/sbin/fsck.exfat" if os.path.exists("/usr/sbin/fsck.exfat") else None)
 EOC = 0xFFFFFFFF
 TIMESTAMP = (2021 - 1980) << 25 | 3 << 21 | 14 << 16 | 10 << 11 | 30 << 5
 
 
-def mkfs(path, size_mb=64, cluster="4K"):
-    with open(path, "ab") as f:
-        f.truncate(size_mb * 1024 * 1024)
+def real_mkfs(path, cluster="4K"):
     subprocess.run([MKFS, "-c", cluster, str(path)], check=True, capture_output=True)
 
 
+def mkfs(path, size_mb=64, cluster="4K"):
+    """Formats with the real mkfs.exfat, or replays what it wrote when this
+    system has none (see recorded.py)."""
+    if MKFS and not os.environ.get("USBRESCUE_REPLAY_MKFS"):
+        with open(path, "ab") as f:
+            f.truncate(size_mb * 1024 * 1024)
+        real_mkfs(path, cluster)
+    else:
+        recorded.replay(recorded.name_of("exfat", size_mb, cluster), path, size_mb)
+
+
 def fsck(path):
-    return subprocess.run([FSCK, "-n", str(path)], capture_output=True, text=True)
+    """None when this system cannot check (then the check is skipped)."""
+    if not FSCK:
+        return None
+    return subprocess.run([FSCK, "-n", str(path)], capture_output=True, text=True).returncode
 
 
 class _Dir:

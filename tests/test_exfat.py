@@ -32,7 +32,7 @@ def build(path, cluster="4K"):
 def windows_formatted(tmp_path):
     path = tmp_path / "pendrive.img"
     img = build(path)
-    assert X.fsck(path).returncode == 0, "the test image itself must be a valid exFAT volume"
+    assert X.fsck(path) in (None, 0), "the test image itself must be a valid exFAT volume"
     img.windows_quick_format()
     img.close()
     return path
