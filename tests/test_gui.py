@@ -188,6 +188,38 @@ def test_rescuing_during_the_scan_then_finishing_copies_nothing_twice(app, tmp_p
     backend.back()
 
 
+def test_names_are_proposed_applied_and_undone(app, scanned, tmp_path):
+    out = tmp_path / "out"
+    scanned.setWithOrphans(False)
+    scanned.recover(str(out))
+    wait_for(app, scanned, "done")
+    unnamed = scanned.state["sumUnnamed"]
+    scanned.suggestNames()
+    wait_for(app, scanned, "naming")
+    end = time.time() + 30
+    while scanned.state["namesBusy"] and time.time() < end:
+        scanned._drain()
+        time.sleep(0.01)
+    rows = scanned.state["names"]
+    assert [(r["current"], r["name"]) for r in rows] == [
+        ("Carpeta sin nombre 6", "Fotos 2021"),         # photos, each with a short note
+        ("Carpeta sin nombre 7", "Documentos 2021"),
+        ("Carpeta sin nombre 9", "Varios 2021")]        # .bin files say nothing
+    assert len(rows) == unnamed
+    before = sorted(os.listdir(out))
+
+    scanned.applyNames(["Mismo", "mismo", "otro"])  # two folders cannot share a name
+    assert scanned.state["namesError"] == "twice" and sorted(os.listdir(out)) == before
+    scanned.setNameChecked(1, False)
+    scanned.setNameChecked(2, False)
+    scanned.applyNames(["Mi carpeta", "ignorada", "ignorada"])
+    assert scanned.state["phase"] == "done" and scanned.state["renamed"] == 1
+    assert "Mi carpeta" in os.listdir(out) and "Carpeta sin nombre 7" in os.listdir(out)
+    assert "Mi carpeta/" in (out / "_informe_recuperacion.csv").read_text()
+    scanned.undoNames()
+    assert sorted(os.listdir(out)) == before and scanned.state["sumUnnamed"] == unnamed
+
+
 def formatted_image(tmp_path):
     path = tmp_path / "pendrive.img"
     img = build(path)
@@ -270,9 +302,15 @@ def test_every_screen_loads_without_a_qml_error(app):
         engine, backend = build_window(app)
         window = engine.rootObjects()[0]
         for phase in ("pick", "diagnosing", "diagnosed", "imaging", "scanning", "scanned",
-                      "recovering", "done", "nothing", "error"):
+                      "recovering", "done", "naming", "nothing", "error"):
             for device in (False, True):
-                backend._set(phase=phase, isDevice=device, verdict="structure", error="no_permission")
+                backend._set(phase=phase, isDevice=device, verdict="structure", error="no_permission",
+                             sumUnnamed=2, renamed=int(device), namesError="twice" if device else "",
+                             names=[dict(current="Carpeta sin nombre 5", name="Fotos 2023",
+                                         source="content", example="", files=12, checked=True),
+                                    dict(current="Carpeta sin nombre 9", name="Trabajo",
+                                         source="original", example="E:/Trabajo/a.xlsx",
+                                         files=3, checked=False)])
                 app.processEvents()
                 loader = window.findChild(object, "pages")
                 assert loader.property("item") is not None, f"{phase} did not load"

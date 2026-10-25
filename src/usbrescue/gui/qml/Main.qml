@@ -17,7 +17,7 @@ ApplicationWindow {
 
     readonly property var st: backend.state
     readonly property int step: ["pick", "error"].indexOf(st.phase) >= 0 ? 1
-        : ["recovering", "done"].indexOf(st.phase) >= 0 ? 3 : 2
+        : ["recovering", "done", "naming"].indexOf(st.phase) >= 0 ? 3 : 2
 
     function num(n) { return Number(n).toLocaleString(Qt.locale("es_ES"), "f", 0) }
     function eta(seconds) {
@@ -68,7 +68,7 @@ ApplicationWindow {
             pick: "PickPage.qml", diagnosing: "DiagnosisPage.qml", diagnosed: "DiagnosisPage.qml",
             imaging: "ImagingPage.qml",
             scanning: "TreePage.qml", scanned: "TreePage.qml", recovering: "RecoverPage.qml",
-            done: "DonePage.qml", nothing: "MessagePage.qml", error: "MessagePage.qml"
+            done: "DonePage.qml", naming: "NamesPage.qml", nothing: "MessagePage.qml", error: "MessagePage.qml"
         })[win.st.phase]
     }
 }

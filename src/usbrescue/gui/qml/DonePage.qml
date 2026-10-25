@@ -51,6 +51,25 @@ Item {
         }
 
         Row {
+            visible: page.st.sumUnnamed > 0 || page.st.renamed > 0
+            spacing: 14
+            Txt {
+                anchors.verticalCenter: parent.verticalCenter
+                width: Math.min(implicitWidth, page.width - 144 - nameBtn.width - 14)
+                font.pixelSize: 15
+                text: page.st.renamed > 0
+                    ? qsTr("Les pusimos nombre a %1 carpetas.").arg(win.num(page.st.renamed))
+                    : qsTr("%1 carpetas perdieron su nombre. Podemos proponerte uno para cada una.").arg(win.num(page.st.sumUnnamed))
+            }
+            Btn {
+                id: nameBtn
+                label: page.st.renamed > 0 ? qsTr("Deshacer") : qsTr("Ponerles nombre")
+                primary: false; implicitHeight: 40
+                onClicked: page.st.renamed > 0 ? backend.undoNames() : backend.suggestNames()
+            }
+        }
+
+        Row {
             visible: page.st.imageMade
             spacing: 14
             Txt {
