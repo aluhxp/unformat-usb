@@ -13,7 +13,19 @@ from PySide6.QtGui import QGuiApplication               # noqa: E402
 
 from helpers import files_under                         # noqa: E402
 from test_exfat import build, expected_in_folders, in_folders     # noqa: E402
-from usbrescue.gui.backend import Backend               # noqa: E402
+from usbrescue.gui.backend import Backend as _Backend   # noqa: E402
+
+# Every backend made here stays alive until the end. Otherwise Python may
+# collect one from a worker thread, and Qt (on macOS at least) cannot take a
+# window object being destroyed outside the main thread. The program itself
+# has a single backend for its whole life.
+_ALIVE = []
+
+
+def Backend(*args, **kwargs):
+    backend = _Backend(*args, **kwargs)
+    _ALIVE.append(backend)
+    return backend
 from usbrescue.gui.tree_model import PENDING, FolderTreeModel     # noqa: E402
 
 
@@ -131,7 +143,8 @@ def test_a_picture_preview_is_copied_to_this_computer_not_the_drive(app, scanned
         scanned._drain()
         time.sleep(0.01)
     path = QUrl(scanned.state["preview"]["source"]).toLocalFile()
-    assert path.startswith(scanned._preview_dir)
+    assert os.path.normcase(os.path.normpath(path)).startswith(
+        os.path.normcase(os.path.normpath(scanned._preview_dir)))
     assert open(path, "rb").read() == expected_in_folders()["viaje_03/foto_3.jpg"]
 
 
@@ -346,7 +359,8 @@ def test_every_screen_loads_without_a_qml_error(app):
         app.processEvents()
     finally:
         qInstallMessageHandler(None)
-    assert problems == []
+    # (Qt on Windows warns it ships no fonts of its own: not about our screens)
+    assert [p for p in problems if not p.startswith("QFontDatabase:")] == []
 
 
 def test_only_photos_and_videos_from_the_window(app, scanned, tmp_path):

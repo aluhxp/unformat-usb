@@ -204,7 +204,7 @@ def test_unreadable_sectors_are_zero_filled_and_reported(windows_formatted, tmp_
     tesis = next(e for e in events if isinstance(e, ev.FileRecovered) and e.path.endswith("tesis.bin"))
     assert "bad_sectors" in tesis.warnings
     want = standard_tree()["Documentos/tesis.bin"]
-    assert files_under(tmp_path / "out")[tesis.path] == b"\x00" * 512 + want[512:]
+    assert files_under(tmp_path / "out")[tesis.path.replace(os.sep, "/")] == b"\x00" * 512 + want[512:]
 
 
 def test_nothing_recoverable_is_said_plainly(tmp_path):

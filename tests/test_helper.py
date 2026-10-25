@@ -12,6 +12,10 @@ from usbrescue.core.reader import HelperSource, Source
 
 HELPER = [sys.executable, helper.__file__]
 
+# the helper is how Linux asks for permission (pkexec); Windows and macOS do
+# it their own way
+pytestmark = pytest.mark.skipif(not sys.platform.startswith("linux"), reason="Linux only")
+
 
 def test_reads_match_a_direct_read(tmp_path):
     path = tmp_path / "data.bin"
