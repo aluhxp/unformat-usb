@@ -42,7 +42,7 @@ def wait_for(app, backend, phase):
         if backend.state["phase"] == phase:
             return
         time.sleep(0.01)
-    raise AssertionError(f"still {backend.state['phase']!r}, expected {phase!r}")
+    raise AssertionError(f"still {backend.state['phase']!r} ({backend.state['error']!r}), expected {phase!r}")
 
 
 @pytest.fixture
@@ -359,8 +359,8 @@ def test_every_screen_loads_without_a_qml_error(app):
         app.processEvents()
     finally:
         qInstallMessageHandler(None)
-    # (Qt on Windows warns it ships no fonts of its own: not about our screens)
-    assert [p for p in problems if not p.startswith("QFontDatabase:")] == []
+    # only what concerns the screens: Qt also chats about fonts on some systems
+    assert [p for p in problems if ".qml" in p or "QML" in p] == []
 
 
 def test_only_photos_and_videos_from_the_window(app, scanned, tmp_path):

@@ -1,6 +1,6 @@
-"""What a real formatter writes, recorded once on Linux and replayed where
-it does not exist (Windows, macOS), so every system tests against the same
-real mkfs.exfat / mkfs.vfat output.
+"""What a real formatter writes, recorded once on Linux and replayed by the
+tests everywhere, so every system tests against the same real mkfs.exfat /
+mkfs.vfat output (versions differ in what they wipe when reformatting).
 
 Recording formats a file full of a marker byte: every sector that no longer
 holds the marker was written by the formatter (zeros included), and is kept.

@@ -297,8 +297,10 @@ class Backend(QObject):
         path = os.path.join(folder, self._t["copy"].format(sanitize(name)))
         self._events.put(("image_path", path))
         started, first = time.time(), None
-        for e in imaging.make_image(self._session.disk, d.path, path):
+        copying = imaging.make_image(self._session.disk, d.path, path)
+        for e in copying:
             if self._stop_imaging:
+                copying.close()         # the copy and its map are closed before saying so
                 self._events.put(("image_paused", None))
                 return
             if isinstance(e, imaging.ImageProgress):

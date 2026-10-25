@@ -19,9 +19,10 @@ def real_mkfs(path, cluster="4K"):
 
 
 def mkfs(path, size_mb=64, cluster="4K"):
-    """Formats with the real mkfs.exfat, or replays what it wrote when this
-    system has none (see recorded.py)."""
-    if MKFS and not os.environ.get("USBRESCUE_REPLAY_MKFS"):
+    """Replays what the real mkfs.exfat wrote (see recorded.py), so every
+    system tests against the same formatter version. USBRESCUE_REAL_MKFS=1
+    runs the installed one instead."""
+    if MKFS and os.environ.get("USBRESCUE_REAL_MKFS"):
         with open(path, "ab") as f:
             f.truncate(size_mb * 1024 * 1024)
         real_mkfs(path, cluster)

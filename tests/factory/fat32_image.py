@@ -20,8 +20,9 @@ def real_mkfs(path):
 
 
 def mkfs(path, size_mb=64):
-    """The real mkfs.vfat, or what it wrote replayed (see recorded.py)."""
-    if MKFS and not os.environ.get("USBRESCUE_REPLAY_MKFS"):
+    """What the real mkfs.vfat wrote, replayed (see recorded.py);
+    USBRESCUE_REAL_MKFS=1 runs the installed one."""
+    if MKFS and os.environ.get("USBRESCUE_REAL_MKFS"):
         with open(path, "ab") as f:
             f.truncate(size_mb * 1024 * 1024)
         real_mkfs(path)
