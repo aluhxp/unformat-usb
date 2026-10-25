@@ -79,8 +79,8 @@ ES = {
     "Copy finished. Unreadable: {}. You can unplug the source now.":
         "Copia terminada. Ilegible: {}. Ya puedes desconectar el origen.",
     # arguments
-    "Recovers the folders and files of a formatted FAT32/exFAT USB drive. It only reads the source.":
-        "Recupera carpetas y archivos de un pendrive FAT32/exFAT formateado. Solo lee el origen.",
+    "Recovers the folders and files of a formatted FAT32/exFAT/NTFS USB drive. It only reads the source.":
+        "Recupera carpetas y archivos de un pendrive FAT32/exFAT/NTFS formateado. Solo lee el origen.",
     "drive image (.img) or device (/dev/sdX, \\\\.\\PhysicalDriveN)":
         "imagen del pendrive (.img) o dispositivo (/dev/sdX, \\\\.\\PhysicalDriveN)",
     "folder to save what is recovered (on ANOTHER disk)": "carpeta donde guardar lo recuperado (en OTRO disco)",
@@ -113,11 +113,12 @@ ES = {
     # scan
     "Source: {} ({})  -- read-only": "Origen: {} ({})  -- solo lectura",
     "Current format (after the format): {}": "Formato actual (después del formateo): {}",
-    "No FAT32/exFAT folders were found. It may have been a full format (it overwrites "
-    "everything) or another file system (NTFS). To rescue loose files, use PhotoRec.":
-        "No se encontraron carpetas FAT32/exFAT. Puede que haya sido un formateo completo "
-        "(sobrescribe todo) u otro sistema de archivos (NTFS). Para rescatar archivos sueltos "
-        "usa PhotoRec.",
+    "No FAT32, exFAT or NTFS folders were found. It may have been a full format (it "
+    "overwrites everything). To rescue loose files, use PhotoRec.":
+        "No se encontraron carpetas FAT32, exFAT ni NTFS. Puede que haya sido un formateo "
+        "completo (sobrescribe todo). Para rescatar archivos sueltos usa PhotoRec.",
+    "Format: NTFS  |  cluster {}  |  file records found {} ({}/{} checks match)":
+        "Formato: NTFS  |  cluster {}  |  fichas de archivo halladas {} ({}/{} comprobaciones coinciden)",
     "Format: FAT32  |  cluster {}  |  folders found {} ({} match the geometry)":
         "Formato: FAT32  |  cluster {}  |  carpetas halladas {} ({} coinciden con la geometría)",
     "Format: exFAT  |  cluster {}  |  folder blocks found {} ({}/{} references match)":
@@ -303,11 +304,11 @@ def make_image(source, image):
 
 def parser():
     ap = argparse.ArgumentParser(prog="unformat-usb-cli", description=_(
-        "Recovers the folders and files of a formatted FAT32/exFAT USB drive. It only reads the source."))
+        "Recovers the folders and files of a formatted FAT32/exFAT/NTFS USB drive. It only reads the source."))
     ap.add_argument("source", nargs="?", help=_("drive image (.img) or device (/dev/sdX, \\\\.\\PhysicalDriveN)"))
     ap.add_argument("dest", nargs="?", help=_("folder to save what is recovered (on ANOTHER disk)"))
     # the Spanish spellings of the first versions still work
-    ap.add_argument("--type", "--tipo", dest="fs_type", choices=["fat32", "exfat"],
+    ap.add_argument("--type", "--tipo", dest="fs_type", choices=["fat32", "exfat", "ntfs"],
                     help=_("force the file system type"))
     ap.add_argument("--deleted", "--borrados", dest="deleted", action="store_true",
                     help=_("include files that were already deleted before the format"))
@@ -388,8 +389,8 @@ def main(argv=None):
             progress(_("Scanning"), e.done, e.total, t0)
         elif isinstance(e, ev.NothingFound):
             sys.stderr.write("\n")
-            print(_("No FAT32/exFAT folders were found. It may have been a full format (it overwrites "
-                    "everything) or another file system (NTFS). To rescue loose files, use PhotoRec."))
+            print(_("No FAT32, exFAT or NTFS folders were found. It may have been a full format (it "
+                    "overwrites everything). To rescue loose files, use PhotoRec."))
             return 1
         elif isinstance(e, ev.ScanFinished):
             result = e.result
@@ -397,7 +398,10 @@ def main(argv=None):
 
     r, g = result, result.geometry
     hits, checked = r.calibration
-    if r.fs == "fat32":
+    if r.fs == "ntfs":
+        print(_("Format: NTFS  |  cluster {}  |  file records found {} ({}/{} checks match)").format(
+            fmt_size(g.cs), r.folder_blocks, hits, checked))
+    elif r.fs == "fat32":
         print(_("Format: FAT32  |  cluster {}  |  folders found {} ({} match the geometry)").format(
             fmt_size(g.cs), checked, hits))
     else:
@@ -467,7 +471,7 @@ def main(argv=None):
         print(_("Nothing has been renamed. To choose which to apply: unformat-usb-cli --names {}").format(args.dest))
     if f.bad_sectors:
         print(_("Warning: {} unreadable sectors (filled with zeros).").format(f.bad_sectors))
-    if not f.orphans_found:
+    if not f.orphans_found and not r.root_recovered:
         print(_("Files that were loose in the root: rescue them with PhotoRec if any are missing."))
     return 0
 

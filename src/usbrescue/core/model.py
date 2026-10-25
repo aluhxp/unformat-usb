@@ -7,10 +7,14 @@ class Entry:
     """A file or folder as described by a directory entry."""
 
     __slots__ = ("name", "is_dir", "cluster", "size", "valid", "mtime",
-                 "deleted", "contiguous", "overwritten")
+                 "deleted", "contiguous", "overwritten", "runs", "data", "compressed", "encrypted")
 
     def __init__(self):
         self.valid = None
+        self.runs = None            # NTFS: [(first cluster, count)], first -1 = nothing stored
+        self.data = None            # NTFS: a tiny file kept inside its record
+        self.compressed = 0         # NTFS: clusters per compression unit
+        self.encrypted = False
         self.contiguous = True
         self.deleted = False
         self.overwritten = False    # deleted, and a newer file now uses its space

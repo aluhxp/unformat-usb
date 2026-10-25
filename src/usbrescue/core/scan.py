@@ -1,7 +1,8 @@
 """One pass over the whole source looking for folder blocks, FAT32 and exFAT
 at the same time. It is a generator so callers can act while it runs."""
 
-from .util import ENTRY, SECTOR, u16
+from .ntfs import header_ok as ntfs_header_ok
+from .util import ENTRY, SECTOR, u16, u32
 
 CHUNK = 32 * 1024 * 1024
 
@@ -73,6 +74,7 @@ def scan_blocks(disk, want_deleted):
          ("fat_ref", offset, cluster)                       a FAT32 entry naming a folder
          ("ex_start", offset)                               a sector starting an exFAT folder
          ("ex_root", offset)                                a sector starting an exFAT root
+         ("ntfs_rec", offset, bytes)                        an NTFS file record
          ("progress", bytes_scanned)                        after each chunk
     """
     off = 0
@@ -126,6 +128,16 @@ def scan_blocks(disk, want_deleted):
             yield ("ex_start", s)
         for p in find_exfat_roots(buf, lim):
             yield ("ex_root", off + p)
+
+        # NTFS: a sector that starts a file record
+        k = firsts.find(b"F")
+        while k != -1:
+            p = k * SECTOR
+            if ntfs_header_ok(buf, p):
+                size = u32(buf, p + 0x1C)
+                raw = buf[p:p + size] if p + size <= len(buf) else disk.read(off + p, size)
+                yield ("ntfs_rec", off + p, raw)
+            k = firsts.find(b"F", k + 1)
 
         off += CHUNK
         yield ("progress", min(off, disk.size))

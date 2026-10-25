@@ -5,7 +5,10 @@ import os
 from .util import sanitize
 
 
-def build_paths(parent_of, contents, root_ents, root_cl, names):
+def build_paths(parent_of, contents, root_ents, root_cl, names, own=None, labels=None):
+    """own: folder names known from the folder itself (NTFS), used when no
+    entry in a parent names it. labels: placeholder names to use instead of
+    names.unnamed_folder (they don't count as known)."""
     known = {}
     for en in root_ents:
         if en.is_dir and en.cluster in contents:
@@ -14,13 +17,16 @@ def build_paths(parent_of, contents, root_ents, root_cl, names):
         for en in ents:
             if en.is_dir and en.cluster in contents and parent_of.get(en.cluster) == par:
                 known.setdefault(en.cluster, en.name)
+    for c, name in (own or {}).items():
+        known.setdefault(c, name)
+    labels = labels or {}
     paths = {}
 
     def path_of(c, depth=0):
         if c in paths:
             return paths[c]
         par = parent_of.get(c, 0)
-        name = sanitize(known.get(c, names.unnamed_folder.format(c)))
+        name = sanitize(known.get(c) or labels.get(c) or names.unnamed_folder.format(c))
         if par in (0, root_cl, c) or depth > 100:
             p = name
         elif par not in contents:

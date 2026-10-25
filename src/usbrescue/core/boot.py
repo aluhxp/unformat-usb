@@ -3,7 +3,7 @@ have used another geometry."""
 
 import struct
 
-from .util import u16, u32
+from .util import u16, u32, u64
 
 
 def _vbr(disk, off):
@@ -16,6 +16,15 @@ def _vbr(disk, off):
         return {"fs": "exfat", "cs": cs, "start": off + u32(b, 88) * bps,
                 "root": u32(b, 96), "fat_off": off + u32(b, 80) * bps,
                 "fat_len": u32(b, 84) * bps, "nclus": u32(b, 92)}
+    if b[3:11] == b"NTFS    ":
+        bps, spc = u16(b, 11), b[13]
+        cs = bps * spc if spc <= 0x80 else bps << (256 - spc)
+        per = struct.unpack_from("<b", b, 64)[0]
+        rec = 1 << -per if per < 0 else per * cs
+        if bps not in (512, 1024, 2048, 4096) or not cs or rec not in (1024, 2048, 4096):
+            return None
+        return {"fs": "ntfs", "cs": cs, "start": off + 2 * cs, "part": off,
+                "mft": off + u64(b, 48) * cs, "rec": rec, "nclus": u64(b, 40) * bps // cs}
     bps, spc, rsv, nfats = struct.unpack_from("<HBHB", b, 11)
     fatsz = u32(b, 36)
     if bps in (512, 1024, 2048, 4096) and spc and fatsz and u16(b, 22) == 0:

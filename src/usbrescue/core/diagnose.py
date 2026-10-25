@@ -7,7 +7,7 @@ and it must never be used to turn someone away."""
 import struct
 from dataclasses import dataclass
 
-from . import fat32
+from . import fat32, ntfs
 from .boot import read_boot
 from .exfat import SYSTEM_NAMES, parse_dir
 from .scan import find_exfat_roots
@@ -65,6 +65,8 @@ def _current_root(disk, boot):
     A drive that was just formatted shows nothing here."""
     if not boot:
         return [], 0
+    if boot["fs"] == "ntfs":
+        return _user_entries(_ntfs_root(disk, boot))
     cs, cluster, raws = boot["cs"], boot["root"], []
     offset = lambda c: boot["start"] + (c - 2) * cs
     if boot["fs"] == "exfat":
@@ -81,6 +83,25 @@ def _current_root(disk, boot):
         if not raw or fat32.parse_dir(raw, False)[1]:
             break
     return _user_entries(fat32.parse_dir(b"".join(raws), False)[0])
+
+
+def _ntfs_root(disk, boot, most=4096):
+    """Live files and folders at the top of today's NTFS volume (from the
+    first records of its MFT: enough to tell whether it is in use)."""
+    mft = ntfs.CurrentMft(disk, boot)
+    out = []
+    for start, first, n in mft.extents:
+        n = min(n, most - first)
+        raw = disk.read(start, n * mft.rs)
+        for k in range(n):
+            if first + k < ntfs.FIRST_USER:
+                continue
+            r = ntfs.parse_record(raw[k * mft.rs:(k + 1) * mft.rs], start + k * mft.rs)
+            if r and not r.base and r.in_use and r.parent == ntfs.ROOT and r.name and mft.live(r):
+                out.append(ntfs.entry_of(r, []))
+        if first + n >= most:
+            break
+    return out
 
 
 def _old_root(disk, skip):
@@ -106,7 +127,7 @@ def diagnose(disk):
     fs = boot["fs"] if boot else None
     links = _fat_links(disk, boot) if fs == "exfat" else 0
     current_folders, current_files = _current_root(disk, boot)
-    here = boot["start"] + (boot["root"] - 2) * boot["cs"] if boot else -1
+    here = boot["start"] + (boot["root"] - 2) * boot["cs"] if boot and "root" in boot else -1
     folders, files = _old_root(disk, here)
     blank = _sample_blank(disk)
     old_root = bool(folders or files)

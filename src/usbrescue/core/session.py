@@ -7,7 +7,7 @@ import hashlib
 import os
 import stat
 
-from . import fat32, rawdisk
+from . import fat32, ntfs, rawdisk
 from .boot import read_boot
 from .clues import name_clues
 from .exfat import ExfatTree
@@ -83,7 +83,10 @@ def iter_runs(disk, g, runs, nbytes):
     for first, count in runs:
         pos, left = g.coff(first), min(remaining, count * g.cs)
         while left > 0:
-            data = disk.read(pos, min(left, COPY_BLOCK))
+            if first < 0:                   # nothing stored here (NTFS): zeros
+                data = b"\x00" * min(left, COPY_BLOCK)
+            else:
+                data = disk.read(pos, min(left, COPY_BLOCK))
             if not data:
                 return
             yield data
@@ -94,6 +97,37 @@ def iter_runs(disk, g, runs, nbytes):
             return
 
 
+def file_chunks(disk, g, en, runs, nbytes):
+    """The first nbytes of a file's content, a block at a time."""
+    if en.data is not None:                 # kept inside its NTFS record
+        if nbytes:
+            yield en.data[:nbytes]
+    elif en.cluster < 2:
+        return
+    elif en.compressed:
+        yield from ntfs.iter_compressed(disk, g, runs, nbytes, en.compressed)
+    else:
+        yield from iter_runs(disk, g, runs, nbytes)
+
+
+def _mostly_inside(recs, g, contents, root_ents):
+    """Do most of these NTFS records lie inside files of the other file system?"""
+    import bisect
+    spans = sorted((g.coff(en.cluster), g.coff(en.cluster) + en.size)
+                   for ents in list(contents.values()) + [root_ents or []] for en in ents
+                   if not en.is_dir and en.size and en.cluster >= 2)
+    starts = [a for a, _ in spans]
+    reach, ends = 0, []
+    for _, b in spans:                      # how far the files up to each one reach
+        reach = max(reach, b)
+        ends.append(reach)
+    inside = 0
+    for r in recs:
+        i = bisect.bisect_right(starts, r.off) - 1
+        inside += i >= 0 and r.off < ends[i]
+    return inside * 2 > len(recs)
+
+
 def file_key(en):
     """Identifies a file across re-reads of its folder."""
     return (en.cluster, en.size, en.name)
@@ -101,6 +135,10 @@ def file_key(en):
 
 def file_plan(en, g, fat):
     """(runs, method): the clusters a file's data comes from."""
+    if en.data is not None:
+        return [], "ntfs_resident"
+    if en.runs is not None:
+        return en.runs, "ntfs_runs"
     ncl = (en.size + g.cs - 1) // g.cs
     if en.size and en.cluster >= 2 and not en.contiguous and fat:
         chain = fat.chain(en.cluster, ncl)
@@ -136,6 +174,7 @@ class Session:
 
         dots, refs = [], []
         live = self.live = ExfatTree(disk, boot, deleted)
+        nt = ntfs.NtfsTree(disk, boot, deleted)
         announced = False
         for hit in scan_blocks(disk, deleted):
             kind = hit[0]
@@ -147,19 +186,52 @@ class Session:
                 dots.append(hit[1:])
             elif kind == "fat_ref":
                 refs.append(hit[1:])
+            elif kind == "ntfs_rec":
+                nt.add(hit[2], hit[1])
             else:
-                if self.fs_type != "fat32":
+                if self.fs_type not in ("fat32", "ntfs"):
                     for ev in live.checkpoint(hit[1]):
                         announced = True
                         yield ev
                 yield ScanProgress(hit[1], disk.size)
 
-        fs = self.fs_type or ("fat32" if dots and len(dots) >= len(live.starts) / 4 else "exfat")
-        if fs == "fat32" and dots:
+        fs = self.fs_type or self._pick_fs(boot, dots, live, nt)
+        own = labels = fat_tree = None
+        finished = False
+        if fs == "ntfs" and not self.fs_type and (dots or live.starts):
+            # an NTFS disk image kept as a file on a FAT32/exFAT drive holds
+            # records too: they don't make the drive NTFS
+            if dots and len(dots) >= len(live.starts) / 4:
+                other = "fat32"
+                fat_tree = fat32.build_tree(disk, dots, refs, boot, deleted)
+                g0, contents0, root0 = fat_tree[0], fat_tree[2], fat_tree[3]
+            else:
+                other = "exfat"
+                for ev in live.finish():
+                    announced = True
+                    yield ev
+                finished = True
+                g0, contents0, root0 = live.geometry, live.contents, live.root_entries
+            if g0 is not None and _mostly_inside(nt.recs, g0, contents0, root0):
+                fs = other
+        if fs == "ntfs" and nt.recs:
+            if announced:
+                yield TreeReset()
+            g, parent_of, contents, root_ents, dir_cls, calibration, own, labels = nt.build(self.names)
+            if not contents and not root_ents:
+                yield NothingFound()
+                return
+            root_cl, blocks = ntfs.ROOT, len(nt.recs)
+            yield GeometryCalibrated("ntfs", g.cs, g.start, False)
+            for c, ents in contents.items():
+                files = [en for en in ents if not en.is_dir]
+                yield FolderFound(c, parent_of.get(c), own.get(c), len(files),
+                                  sum(en.size for en in files))
+        elif fs == "fat32" and dots:
             if announced:
                 yield TreeReset()
             g, parent_of, contents, root_ents, dir_cls, root_cl, calibration = \
-                fat32.build_tree(disk, dots, refs, boot, deleted)
+                fat_tree or fat32.build_tree(disk, dots, refs, boot, deleted)
             blocks = len(dots)
             yield GeometryCalibrated("fat32", g.cs, g.start, False)
             for c, ents in contents.items():
@@ -167,7 +239,8 @@ class Session:
                 yield FolderFound(c, parent_of.get(c), None, len(files),
                                   sum(en.size for en in files))
         elif fs == "exfat" and live.starts:
-            yield from live.finish()
+            if not finished:
+                yield from live.finish()
             if live.geometry is None:
                 yield NothingFound()
                 return
@@ -178,7 +251,7 @@ class Session:
             yield NothingFound()
             return
 
-        paths, known = build_paths(parent_of, contents, root_ents, root_cl, self.names)
+        paths, known = build_paths(parent_of, contents, root_ents, root_cl, self.names, own, labels)
         tasks = [(paths[c], en) for c, ents in contents.items() for en in ents if not en.is_dir]
         tasks += [("", en) for en in root_ents if not en.is_dir]
         total = sum(en.size for _, en in tasks)
@@ -192,15 +265,16 @@ class Session:
         elif g.fat:
             fat_state = "kept"
 
-        if deleted == "only":
+        if deleted == "only" or fs == "ntfs":
             # the live files are not listed, but their space is not free:
-            # the search for loose files must not bring them back
+            # the search for loose files must not bring them back (on NTFS
+            # that includes the new format's own files)
             in_use = clusters_in_use(disk, boot, g)
             if in_use:
                 in_use.mark(claimed)
         unnamed = {c: p for c, p in paths.items() if c not in known and os.sep not in p}
         orphans, renamed = [], {}
-        if fs == "exfat" and self.find_orphans:
+        if fs in ("exfat", "ntfs") and self.find_orphans:
             orphans = find_orphans(disk, g, claimed)
             renamed = name_clues(disk, g, orphans, contents, unnamed)
 
@@ -216,9 +290,21 @@ class Session:
             paths=paths, plans=plans, total_bytes=total, orphans=orphans, renamed=renamed,
             unnamed_tops=len(unnamed) - len(renamed), calibration=calibration,
             folder_blocks=blocks, fragmented=frag, chained=chained, fat_state=fat_state,
-            root_recovered=fs == "exfat" and live.root_is_old,
+            root_recovered=(fs == "exfat" and live.root_is_old) or (fs == "ntfs" and bool(root_ents)),
             names=self.names)
         yield ScanFinished(self.result)
+
+    @staticmethod
+    def _pick_fs(boot, dots, live, nt):
+        """Which old file system the drive holds the most of. NTFS counts
+        files and folders, the others count folders."""
+        folders = len(dots) if dots and len(dots) >= len(live.starts) / 4 else len(live.starts)
+        if nt.recs:
+            nt_folders, nt_files = nt.count()
+            if nt_files and ((nt.deleted == "only" and boot and boot["fs"] == "ntfs")
+                             or nt_folders + nt_files / 8 > folders):
+                return "ntfs"
+        return "fat32" if dots and len(dots) >= len(live.starts) / 4 else "exfat"
 
     def _make_plans(self, g, fat, tasks, dir_cls, boot):
         """Which clusters each file comes from. Also notes which clusters
@@ -238,7 +324,9 @@ class Session:
                 chained += method == "fat_chain"
             if en.size and en.cluster >= 2:
                 for first, count in runs:
-                    a, b = max(first, 0), min(first + count, len(claimed))
+                    if first < 0:
+                        continue
+                    a, b = first, min(first + count, len(claimed))
                     if b > a:
                         claimed[a:b] = b"\x01" * (b - a)
             plans.append((rel, en, runs, method))
@@ -266,11 +354,11 @@ class Session:
     def read_file(self, en, limit):
         """The first `limit` bytes of a file, for a preview."""
         g = self.geometry
-        if g is None or en.cluster < 2 or not en.size:
+        if g is None or not en.size:
             return b""
         runs, _ = file_plan(en, g, g.fat)
         valid = en.size if en.valid is None else min(en.valid, en.size)
-        return b"".join(iter_runs(self.disk, g, runs, min(valid, limit)))
+        return b"".join(file_chunks(self.disk, g, en, runs, min(valid, limit)))[:limit]
 
     def live_plans(self, clusters):
         """Plans for folders picked while the scan is still running. A folder
@@ -331,8 +419,15 @@ class Session:
             taken.add(target.lower())
 
             warnings = []
-            if en.size and en.cluster < 2:
+            if en.size and en.cluster < 2 and en.data is None:
                 warnings.append("no_data")
+            elif method == "ntfs_runs":
+                stored = sum(n for _, n in runs) * g.cs
+                if (not en.compressed and stored < en.size) or \
+                        any(first >= 0 and g.coff(first + n) > disk.size for first, n in runs):
+                    warnings.append("incomplete")
+                if en.encrypted:
+                    warnings.append("encrypted")
             elif en.size and method == "contiguous":
                 ncl = (en.size + g.cs - 1) // g.cs
                 if any((en.cluster + k) in dir_clusters for k in range(min(ncl, 1 << 20))):
@@ -351,8 +446,8 @@ class Session:
             valid = en.size if en.valid is None else min(en.valid, en.size)
             bad_before = disk.bad_sectors
             with open(target, "wb") as out:
-                if en.cluster >= 2:
-                    for data in iter_runs(disk, g, runs, valid):
+                if en.cluster >= 2 or en.data is not None:
+                    for data in file_chunks(disk, g, en, runs, valid):
                         out.write(data)
                         done += len(data)
                         yield CopyProgress(done, total)
@@ -429,7 +524,7 @@ class _Twins:
             runs, _ = file_plan(en, g, g.fat)
             valid = en.size if en.valid is None else min(en.valid, en.size)
             h, got = hashlib.sha1(), 0
-            for block in iter_runs(s.disk, g, runs, valid):
+            for block in file_chunks(s.disk, g, en, runs, valid):
                 h.update(block)
                 got += len(block)
             h.update(b"\x00" * (en.size - got))    # the rest of the file is zeros

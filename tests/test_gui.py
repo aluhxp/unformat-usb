@@ -428,3 +428,44 @@ def test_nothing_deleted_is_said_plainly(app, tmp_path):
     backend.findDeleted()
     wait_for(app, backend, "nothing")
     backend.back()
+
+
+def test_a_formatted_ntfs_drive_in_the_window(app, tmp_path):
+    from factory import ntfs_image as N
+    from test_ntfs import EXPECTED, build as build_ntfs
+    path = tmp_path / "pendrive.img"
+    build_ntfs(path).close()
+    N.quick_format(path)
+    backend = Backend()
+    backend.addImage(QUrl.fromLocalFile(str(path)))
+    backend.choose(0)
+    wait_for(app, backend, "diagnosed")
+    assert backend.state["verdict"] != "in_use"
+    backend.scan()
+    wait_for(app, backend, "scanned")
+    assert sorted(names(backend)) == ["Datos", "Documentos", "Fotos", "Música"]
+    out = tmp_path / "out"
+    backend.recover(str(out))
+    wait_for(app, backend, "done")
+    got = files_under(out)
+    for rel, data in EXPECTED.items():
+        assert got[rel] == data, rel
+    backend.back()
+
+
+def test_deleted_files_of_a_live_ntfs_drive_in_the_window(app, tmp_path):
+    from test_ntfs import build as build_ntfs
+    path = tmp_path / "pendrive.img"
+    img = build_ntfs(path)
+    img.delete("Documentos/informe.pdf")
+    img.close()
+    backend = Backend()
+    backend.addImage(QUrl.fromLocalFile(str(path)))
+    backend.choose(0)
+    wait_for(app, backend, "diagnosed")
+    assert backend.state["verdict"] == "in_use"
+    backend.findDeleted()
+    wait_for(app, backend, "scanned")
+    assert names(backend) == ["Documentos"]
+    assert backend.state["foundFiles"] == 1
+    backend.back()

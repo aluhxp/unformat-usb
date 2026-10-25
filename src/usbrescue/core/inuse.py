@@ -21,6 +21,8 @@ class InUse:
 
     def any(self, runs):
         for first, count in runs:
+            if first < 0:                   # nothing stored (NTFS)
+                continue
             for c in range(first, first + count):
                 if 2 <= c < self.nclus + 2 and self.used(c):
                     return True
@@ -59,6 +61,21 @@ def _fat32_table(disk, boot, g):
     return InUse(used, n - 2)
 
 
+def _ntfs_bitmap(disk, boot, g):
+    from . import ntfs
+    r = ntfs.mft_record(disk, boot, 6)      # $Bitmap
+    if r is None or r.recno not in (6, None):
+        return None
+    bits = ntfs._stream(disk, boot, r)
+    if not bits:
+        return None
+
+    def used(c):                            # NTFS counts clusters from the volume's start
+        return c >> 3 < len(bits) and bits[c >> 3] >> (c & 7) & 1
+
+    return InUse(used, boot["nclus"] - 2)
+
+
 def clusters_in_use(disk, boot, g):
     """An InUse, or None when the current file system can't tell."""
     if not boot or (boot["cs"], boot["start"]) != (g.cs, g.start):
@@ -66,6 +83,8 @@ def clusters_in_use(disk, boot, g):
     try:
         if boot["fs"] == "exfat":
             return _exfat_bitmap(disk, boot, g)
+        if boot["fs"] == "ntfs":
+            return _ntfs_bitmap(disk, boot, g)
         if boot["fs"] == "fat32" and boot.get("fat_len"):
             return _fat32_table(disk, boot, g)
     except (OSError, ValueError, struct.error):
