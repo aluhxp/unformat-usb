@@ -1,4 +1,8 @@
-"""Command line. Messages are in Spanish for now; translations come with i18n."""
+"""Command line, in English or Spanish (--lang, or the system's language).
+
+Messages are written in English; ES holds their Spanish. The words written
+to disk (folder names, the report) come from usbrescue.texts, like the window's.
+"""
 
 import argparse
 import csv
@@ -6,6 +10,7 @@ import os
 import sys
 import time
 
+from .. import texts
 from ..core import model as ev
 from ..core import imaging
 from ..core import naming
@@ -14,140 +19,268 @@ from ..core.reader import Source
 from ..core.session import Session, UnsafeDestination
 from ..core.util import fmt_size
 
-NAMES = ev.Names(unnamed_folder="CARPETA_SIN_NOMBRE_{}", lost_parent="_HUERFANAS",
-                 orphan_dir="_RAIZ_Y_HUERFANOS", orphan_file="huerfano_{}",
-                 photo_label="foto {}", link_label="enlace {}", text_pieces="_TROZOS_DE_TEXTO")
-WARNINGS = {
-    "no_data": "sin datos",
-    "fragmented": "fragmentado: puede estar danado",
-    "maybe_fragmented": "posible fragmentado: revisar",
-    "incomplete": "incompleto",
-    "was_deleted": "estaba borrado",
-    "bad_sectors": "sectores ilegibles",
-}
-METHODS = {
-    "contiguous": "contiguo",
-    "fat_chain": "cadena FAT",
-    "orphan_chain": "cadena FAT huerfana",
-    "signature": "firma en cluster libre",
-}
-ORPHAN_STATUS = {
-    "verified": "ok (verificado)",
-    "pdf_valid": "ok (estructura PDF valida)",
-    "png_complete": "ok (PNG completo)",
-    "damaged": "danado",
-    "chain_unverified": "cadena FAT completa: sin verificar",
-    "size_approx": "tamano aproximado: sin verificar",
-    "text": "texto sin carpeta: revisar",
-    "text_cut": "texto cortado: revisar",
-}
+LANGS = ("en", "es")
 
-# names proposed from what a folder holds (these become folder names: accents are fine)
-KIND_WORDS = {
-    "photos": "Fotos", "videos": "Videos", "music": "Música", "documents": "Documentos",
-    "spreadsheets": "Hojas de cálculo", "presentations": "Presentaciones",
-    "programs": "Programas", "disk_images": "Imágenes de disco", "archives": "Comprimidos",
-    "code": "Código", "books": "Libros", "fonts": "Fuentes", "mixed": "Varios",
+ES = {
+    # names
+    "original name, it appears in the path {}": "nombre original, aparece en la ruta {}",
+    "suggested from its content": "sugerido por su contenido",
+    "  {:3}. {}  ->  {}   ({} files; {})": "  {:3}. {}  ->  {}   ({} archivos; {})",
+    "There are no unnamed folders in {}": "No hay carpetas sin nombre en {}",
+    "Proposed names for {} folder(s):": "Nombres propuestos para {} carpeta(s):",
+    "\nWhich ones should I rename? (a = all, 1,3,5 = those, Enter = none): ":
+        "\n¿Cuáles renombro? (t = todas, 1,3,5 = esas, Enter = ninguna): ",
+    "Nothing was changed.": "No se cambió nada.",
+    "Could not rename: {} already exists or is missing. What came before is done.":
+        "No se pudo renombrar: ya existe o falta {}. Lo anterior quedó hecho.",
+    "Renamed {}. To undo it: unformat-usb-cli --undo-names {}":
+        "Renombradas {}. Para deshacerlo: unformat-usb-cli --undo-names {}",
+    "Undid {} name change(s).": "Deshechos {} cambio(s) de nombre.",
+    "There were no name changes to undo.": "No había cambios de nombre que deshacer.",
+    # diagnosis
+    "This drive looks fine: its files are in plain sight and there is no sign of a recent "
+    "format. If you are looking for something deleted or from before a format, the full scan "
+    "may find it.":
+        "Este pendrive parece estar bien: sus archivos están a la vista y no hay señales de un "
+        "formateo reciente. Si buscas algo borrado o anterior a un formateo, el escaneo completo "
+        "puede encontrarlo.",
+    "Good news: the old root folder is still there. The folders can be recovered with their names.":
+        "Buenas noticias: la carpeta raíz antigua sigue ahí. Se pueden recuperar las carpetas "
+        "con sus nombres.",
+    "The old FAT survived: the folder tree and fragmented files can be rebuilt. The names of "
+    "the top folders were lost.":
+        "La tabla FAT antigua sobrevivió: se puede reconstruir el árbol de carpetas y los archivos "
+        "fragmentados. Los nombres de las carpetas de primer nivel se perdieron.",
+    "The format erased the root and the FAT. A full scan is needed to know what can be recovered.":
+        "El formateo borró la raíz y la tabla FAT. Hace falta el escaneo completo para saber qué "
+        "se puede recuperar.",
+    "Everything sampled is blank. Either the drive held no data, or the format erased it (full "
+    "format, or TRIM on an SSD). The full scan will confirm it.":
+        "Todo lo que se miró está vacío. O el disco no tenía datos, o se borraron al formatear "
+        "(formateo completo, o TRIM en un SSD). El escaneo completo lo confirma.",
+    "Current format: {}": "Formato actual: {}",
+    "not recognised": "no reconocido",
+    "In sight now: {} folders and {} files in the root": "A la vista ahora: {} carpetas y {} archivos en la raíz",
+    "Old FAT: {}": "Tabla FAT antigua: {}",
+    "yes, {} links": "sí, {} enlaces",
+    "no": "no",
+    "Old root: yes, {} folders and {} files": "Raíz antigua: sí, {} carpetas y {} archivos",
+    "Old root: no": "Raíz antigua: no",
+    "Blank blocks in the sample: {:.0%}": "Bloques vacíos en la muestra: {:.0%}",
+    # progress and image
+    "{}: {:5.1f}%  {:6.1f} MB/s  ~{} min left   ": "{}: {:5.1f}%  {:6.1f} MB/s  faltan ~{} min   ",
+    "Not enough space for the copy: it needs {} and {} is free.":
+        "No hay espacio para la copia: hacen falta {} y hay {} libres.",
+    "Copying {} ({}) to {}": "Copiando {} ({}) a {}",
+    "Retrying": "Reintentando",
+    "Copying": "Copiando",
+    "Scanning": "Escaneando",
+    "{}: {:5.1f}%  {:6.1f} MB/s  unreadable: {}   ": "{}: {:5.1f}%  {:6.1f} MB/s  ilegible: {}   ",
+    "Copy finished. Unreadable: {}. You can unplug the source now.":
+        "Copia terminada. Ilegible: {}. Ya puedes desconectar el origen.",
+    # arguments
+    "Recovers the folders and files of a formatted FAT32/exFAT USB drive. It only reads the source.":
+        "Recupera carpetas y archivos de un pendrive FAT32/exFAT formateado. Solo lee el origen.",
+    "drive image (.img) or device (/dev/sdX, \\\\.\\PhysicalDriveN)":
+        "imagen del pendrive (.img) o dispositivo (/dev/sdX, \\\\.\\PhysicalDriveN)",
+    "folder to save what is recovered (on ANOTHER disk)": "carpeta donde guardar lo recuperado (en OTRO disco)",
+    "force the file system type": "forzar el tipo de sistema de archivos",
+    "include files that were already deleted before the format":
+        "incluir archivos que ya estaban borrados antes del formateo",
+    "show what was found without copying": "mostrar lo encontrado sin copiar",
+    "don't look for files without a folder (the loose ones in the root)":
+        "no buscar archivos sin carpeta (los que estaban sueltos en la raíz)",
+    "extract only the files without a folder, without copying the rest":
+        "extraer solo los archivos sin carpeta, sin copiar el resto",
+    "rescue only photos and videos, each in its folder": "rescatar solo fotos y videos, cada uno en su carpeta",
+    "first copy the source to this file and recover from the copy (copes with bad sectors; "
+    "resumes if interrupted)":
+        "copiar primero el origen a este archivo y recuperar desde la copia (tolera sectores "
+        "dañados; si se interrumpe, se reanuda)",
+    "check in seconds what the format left, without scanning":
+        "revisar en segundos qué dejó el formateo, sin escanear",
+    "suggest names for the recovered unnamed folders and rename the ones you choose":
+        "proponer nombres para las carpetas recuperadas sin nombre y renombrar las que elijas",
+    "put back the names from before --names": "volver a poner los nombres anteriores a --names",
+    "language of the messages and of the folder names": "idioma de los mensajes y de los nombres de carpeta",
+    "the source and the destination are missing": "faltan el origen y el destino",
+    "No permission to read the source. Run it with sudo (or as administrator on Windows).":
+        "Sin permiso para leer el origen. Ejecútalo con sudo (o como administrador en Windows).",
+    "The copy cannot be saved on the same device as the source.":
+        "La copia no puede guardarse en el mismo dispositivo que el origen.",
+    # scan
+    "Source: {} ({})  -- read-only": "Origen: {} ({})  -- solo lectura",
+    "Current format (after the format): {}": "Formato actual (después del formateo): {}",
+    "No FAT32/exFAT folders were found. It may have been a full format (it overwrites "
+    "everything) or another file system (NTFS). To rescue loose files, use PhotoRec.":
+        "No se encontraron carpetas FAT32/exFAT. Puede que haya sido un formateo completo "
+        "(sobrescribe todo) u otro sistema de archivos (NTFS). Para rescatar archivos sueltos "
+        "usa PhotoRec.",
+    "Format: FAT32  |  cluster {}  |  folders found {} ({} match the geometry)":
+        "Formato: FAT32  |  cluster {}  |  carpetas halladas {} ({} coinciden con la geometría)",
+    "Format: exFAT  |  cluster {}  |  folder blocks found {} ({}/{} references match)":
+        "Formato: exFAT  |  cluster {}  |  bloques de carpeta hallados {} ({}/{} referencias coinciden)",
+    "Folders: {}  |  files: {}  |  total: {}": "Carpetas: {}  |  archivos: {}  |  total: {}",
+    "The old FAT is not reliable: it is not used.": "La tabla FAT antigua no es fiable: no se usa.",
+    "Old FAT kept: {} of {} fragmented files have their full chain.":
+        "Tabla FAT antigua conservada: {} de {} archivos fragmentados tienen su cadena completa.",
+    "No old FAT: {} fragmented files will be copied as contiguous.":
+        "Sin tabla FAT antigua: {} archivos fragmentados se copiarán como contiguos.",
+    "Files without a folder (root and loose): {} candidates, {} at most":
+        "Huérfanos (raíz y sin carpeta): {} candidatos, {} como máximo",
+    "Old root recovered: the top folders keep their names.":
+        "Raíz antigua recuperada: las carpetas de primer nivel conservan su nombre.",
+    "Original name recovered: {} -> {}": "Nombre original recuperado: {} -> {}",
+    "  {}/{}.{}   (up to {}, {})": "  {}/{}.{}   (hasta {}, {})",
+    # recovery
+    "The destination is on the same device as the source. Choose a folder on another disk.":
+        "El destino está en el mismo dispositivo que el origen. Elige una carpeta en otro disco.",
+    "\nDone: {} files ok, {} with warnings.  Report: {}":
+        "\nListo: {} archivos ok, {} con avisos.  Informe: {}",
+    "Files without a folder saved in {}: {} (of {} candidates). The root's files are among "
+    "them, without their original names.":
+        "Huérfanos guardados en {}: {} (de {} candidatos). Entre ellos están los archivos de la "
+        "raíz, sin su nombre original.",
+    "{} file(s) without a folder were a copy of a file already recovered and are not repeated.":
+        "{} huérfano(s) eran copia de un archivo ya recuperado y no se repiten.",
+    "{} top folder(s) did not keep their name; their content did. Proposed names:":
+        "{} carpeta(s) de primer nivel no conservaron su nombre; su contenido sí. Nombres propuestos:",
+    "Nothing has been renamed. To choose which to apply: unformat-usb-cli --names {}":
+        "Nada se ha renombrado. Para elegir cuáles aplicar: unformat-usb-cli --names {}",
+    "Warning: {} unreadable sectors (filled with zeros).":
+        "Atención: {} sectores ilegibles (rellenados con ceros).",
+    "Files that were loose in the root: rescue them with PhotoRec if any are missing.":
+        "Archivos que estaban sueltos en la raíz: rescátalos con PhotoRec si faltan.",
+    "\nCancelled.": "\nCancelado.",
 }
-REPORT = "_informe_recuperacion.csv"
-NAMES_LOG = "_cambios_de_nombre.json"
+ORPHAN_REPORT = {"en": "_orphans_report.csv", "es": "_informe_huerfanos.csv"}
+
+_lang = "en"
 
 
-def spanish_label(kind, years, theme):
-    return naming.compose(KIND_WORDS[kind], years, theme)
+def _(text):
+    return ES.get(text, text) if _lang == "es" else text
+
+
+def system_language():
+    for var in ("LC_ALL", "LC_MESSAGES", "LANG", "LANGUAGE"):
+        value = os.environ.get(var, "")
+        if value:
+            return "es" if value.lower().startswith("es") else "en"
+    if sys.platform == "win32":
+        import locale
+        code = (locale.getlocale()[0] or "").lower()
+        return "es" if code.startswith(("es", "spanish")) else "en"
+    return "en"
+
+
+def set_language(lang):
+    global _lang
+    _lang = lang if lang in LANGS else "en"
+    return texts.texts(_lang)
+
+
+W = texts.texts("en")
+
+
+def label(kind, years, theme):
+    return naming.compose(W["kinds"][kind], years, theme)
 
 
 def name_suggestions(dest):
-    items = naming.items_from_folder(dest, skip={REPORT, NAMES_LOG, "_informe_huerfanos.csv"})
-    return naming.suggest(items, naming.unnamed_folders(items, NAMES), spanish_label)
+    skip = {W["report"], W["names_log"], ORPHAN_REPORT[_lang]}
+    items = naming.items_from_folder(dest, skip=skip)
+    return naming.suggest(items, naming.unnamed_folders(items, W["names"]), label)
 
 
 def print_suggestions(found):
     for i, s in enumerate(found, 1):
-        how = (f"nombre original, aparece en la ruta {s.example}"
-               if s.source == "original" else "sugerido por su contenido")
-        print(f"  {i:3}. {os.sep.join(s.folder)}  ->  {s.name}   ({s.files} archivos; {how})")
+        how = (_("original name, it appears in the path {}").format(s.example)
+               if s.source == "original" else _("suggested from its content"))
+        print(_("  {:3}. {}  ->  {}   ({} files; {})").format(i, os.sep.join(s.folder), s.name, s.files, how))
 
 
 def review_names(dest):
     """Shows the proposed names and renames only what the person accepts."""
     found = name_suggestions(dest)
     if not found:
-        print("No hay carpetas sin nombre en", dest)
+        print(_("There are no unnamed folders in {}").format(dest))
         return 0
-    print(f"Nombres propuestos para {len(found)} carpeta(s):")
+    print(_("Proposed names for {} folder(s):").format(len(found)))
     print_suggestions(found)
-    answer = input("\n¿Cuáles renombro? (t = todas, 1,3,5 = esas, Enter = ninguna): ").strip().lower()
-    if answer in ("t", "todas"):
+    answer = input(_("\nWhich ones should I rename? (a = all, 1,3,5 = those, Enter = none): ")).strip().lower()
+    if answer in ("a", "all", "t", "todas"):
         chosen = found
     else:
         picks = {int(x) for x in answer.replace(" ", "").split(",") if x.isdigit()}
         chosen = [s for i, s in enumerate(found, 1) if i in picks]
     if not chosen:
-        print("No se cambió nada.")
+        print(_("Nothing was changed."))
         return 0
     try:
         done = naming.rename(dest, [(s.folder, s.name) for s in chosen],
-                             os.path.join(dest, NAMES_LOG), os.path.join(dest, REPORT))
+                             os.path.join(dest, W["names_log"]), os.path.join(dest, W["report"]))
     except naming.RenameError as e:
-        print(f"No se pudo renombrar: ya existe o falta {e}. Lo anterior quedó hecho.")
+        print(_("Could not rename: {} already exists or is missing. What came before is done.").format(e))
         return 1
-    print(f"Renombradas {len(done)}. Para deshacerlo: unformat-usb-cli --deshacer-nombres {dest}")
+    print(_("Renamed {}. To undo it: unformat-usb-cli --undo-names {}").format(len(done), dest))
     return 0
 
 
 def undo_names(dest):
-    n = naming.undo(dest, os.path.join(dest, NAMES_LOG), os.path.join(dest, REPORT))
-    print(f"Deshechos {n} cambio(s) de nombre." if n else "No había cambios de nombre que deshacer.")
+    n = naming.undo(dest, os.path.join(dest, W["names_log"]), os.path.join(dest, W["report"]))
+    print(_("Undid {} name change(s).").format(n) if n else _("There were no name changes to undo."))
     return 0
 
 
 VERDICTS = {
-    "in_use": "Este pendrive parece estar bien: sus archivos estan a la vista y no hay senales de un "
-              "formateo reciente. Si buscas algo borrado o anterior a un formateo, el escaneo "
-              "completo puede encontrarlo.",
-    "names_and_structure": "Buenas noticias: la carpeta raiz antigua sigue ahi. Se pueden recuperar "
-                           "las carpetas con sus nombres.",
-    "structure": "La tabla FAT antigua sobrevivio: se puede reconstruir el arbol de carpetas y los "
-                 "archivos fragmentados. Los nombres de las carpetas de primer nivel se perdieron.",
-    "scan_needed": "El formateo borro la raiz y la tabla FAT. Hace falta el escaneo completo para "
-                   "saber que se puede recuperar.",
-    "looks_empty": "Todo lo que se miro esta vacio. O el disco no tenia datos, o se borraron al "
-                   "formatear (formateo completo, o TRIM en un SSD). El escaneo completo lo confirma.",
+    "in_use": "This drive looks fine: its files are in plain sight and there is no sign of a recent "
+              "format. If you are looking for something deleted or from before a format, the full scan "
+              "may find it.",
+    "names_and_structure": "Good news: the old root folder is still there. The folders can be "
+                           "recovered with their names.",
+    "structure": "The old FAT survived: the folder tree and fragmented files can be rebuilt. The "
+                 "names of the top folders were lost.",
+    "scan_needed": "The format erased the root and the FAT. A full scan is needed to know what can "
+                   "be recovered.",
+    "looks_empty": "Everything sampled is blank. Either the drive held no data, or the format erased "
+                   "it (full format, or TRIM on an SSD). The full scan will confirm it.",
 }
 
 
 def print_diagnosis(d):
-    print(f"Formato actual: {d.current_fs or 'no reconocido'}")
-    print(f"A la vista ahora: {len(d.current_folders)} carpetas y {d.current_files} archivos en la raiz")
-    print(f"Tabla FAT antigua: {'si, ' + str(d.fat_links) + ' enlaces' if d.old_fat else 'no'}")
+    print(_("Current format: {}").format(d.current_fs or _("not recognised")))
+    print(_("In sight now: {} folders and {} files in the root").format(len(d.current_folders), d.current_files))
+    print(_("Old FAT: {}").format(_("yes, {} links").format(d.fat_links) if d.old_fat else _("no")))
     if d.old_root:
-        print(f"Raiz antigua: si, {len(d.root_folders)} carpetas y {d.root_files} archivos")
+        print(_("Old root: yes, {} folders and {} files").format(len(d.root_folders), d.root_files))
         for name in d.root_folders[:30]:
             print(f"    {name}/")
     else:
-        print("Raiz antigua: no")
-    print(f"Bloques vacios en la muestra: {d.blank_fraction:.0%}")
+        print(_("Old root: no"))
+    print(_("Blank blocks in the sample: {:.0%}").format(d.blank_fraction))
     print()
-    print(VERDICTS[d.verdict])
+    print(_(VERDICTS[d.verdict]))
 
 
-def progress(label, done, total, t0):
+def progress(label_, done, total, t0):
     pct = 100.0 * done / total if total else 100.0
     el = time.time() - t0
     speed = done / el / 1e6 if el > 0 else 0
     eta = (total - done) / (done / el) if done and el > 0 else 0
-    sys.stderr.write(f"\r{label}: {pct:5.1f}%  {speed:6.1f} MB/s  faltan ~{int(eta // 60)} min   ")
+    sys.stderr.write("\r" + _("{}: {:5.1f}%  {:6.1f} MB/s  ~{} min left   ").format(
+        label_, pct, speed, int(eta // 60)))
     sys.stderr.flush()
 
 
 def make_image(source, image):
     disk = Source(source)
-    free, fits, _ = imaging.space_check(disk.size, os.path.dirname(os.path.abspath(image)))
+    free, fits, _x = imaging.space_check(disk.size, os.path.dirname(os.path.abspath(image)))
     if not fits and not os.path.exists(image):
-        print(f"No hay espacio para la copia: hacen falta {fmt_size(disk.size)} y hay {fmt_size(free)} libres.")
+        print(_("Not enough space for the copy: it needs {} and {} is free.").format(
+            fmt_size(disk.size), fmt_size(free)))
         return 1
-    print(f"Copiando {source} ({fmt_size(disk.size)}) a {image}")
+    print(_("Copying {} ({}) to {}").format(source, fmt_size(disk.size), image))
     t0, start, finished = time.time(), None, None
     for e in imaging.make_image(disk, source, image):
         if isinstance(e, imaging.ImageFinished):
@@ -156,71 +289,86 @@ def make_image(source, image):
             start = e.done if start is None else start      # a resumed copy starts part-way
             el = time.time() - t0
             speed = (e.done - start) / el / 1e6 if el > 0 else 0
-            sys.stderr.write(f"\r{'Reintentando' if e.retrying else 'Copiando'}: "
-                             f"{100.0 * e.done / e.total:5.1f}%  {speed:6.1f} MB/s  "
-                             f"ilegible: {fmt_size(e.bad_bytes)}   ")
+            sys.stderr.write("\r" + _("{}: {:5.1f}%  {:6.1f} MB/s  unreadable: {}   ").format(
+                _("Retrying") if e.retrying else _("Copying"), 100.0 * e.done / e.total, speed,
+                fmt_size(e.bad_bytes)))
             sys.stderr.flush()
     sys.stderr.write("\n")
     disk.close()
-    print(f"Copia terminada. Ilegible: {fmt_size(finished.bad_bytes)}. Ya puedes desconectar el origen.")
+    print(_("Copy finished. Unreadable: {}. You can unplug the source now.").format(fmt_size(finished.bad_bytes)))
     return 0
 
 
+def parser():
+    ap = argparse.ArgumentParser(prog="unformat-usb-cli", description=_(
+        "Recovers the folders and files of a formatted FAT32/exFAT USB drive. It only reads the source."))
+    ap.add_argument("source", nargs="?", help=_("drive image (.img) or device (/dev/sdX, \\\\.\\PhysicalDriveN)"))
+    ap.add_argument("dest", nargs="?", help=_("folder to save what is recovered (on ANOTHER disk)"))
+    # the Spanish spellings of the first versions still work
+    ap.add_argument("--type", "--tipo", dest="fs_type", choices=["fat32", "exfat"],
+                    help=_("force the file system type"))
+    ap.add_argument("--deleted", "--borrados", dest="deleted", action="store_true",
+                    help=_("include files that were already deleted before the format"))
+    ap.add_argument("--list-only", "--solo-listar", dest="list_only", action="store_true",
+                    help=_("show what was found without copying"))
+    ap.add_argument("--no-orphans", "--sin-huerfanos", dest="no_orphans", action="store_true",
+                    help=_("don't look for files without a folder (the loose ones in the root)"))
+    ap.add_argument("--only-orphans", "--solo-huerfanos", dest="only_orphans", action="store_true",
+                    help=_("extract only the files without a folder, without copying the rest"))
+    ap.add_argument("--only-photos", "--solo-fotos", dest="only_photos", action="store_true",
+                    help=_("rescue only photos and videos, each in its folder"))
+    ap.add_argument("--image", "--imagen", dest="image", metavar="FILE",
+                    help=_("first copy the source to this file and recover from the copy (copes with "
+                           "bad sectors; resumes if interrupted)"))
+    ap.add_argument("--diagnose", "--diagnostico", dest="diagnose", action="store_true",
+                    help=_("check in seconds what the format left, without scanning"))
+    ap.add_argument("--names", "--nombres", dest="names", metavar="FOLDER",
+                    help=_("suggest names for the recovered unnamed folders and rename the ones you choose"))
+    ap.add_argument("--undo-names", "--deshacer-nombres", dest="undo_names", metavar="FOLDER",
+                    help=_("put back the names from before --names"))
+    ap.add_argument("--lang", choices=LANGS, help=_("language of the messages and of the folder names"))
+    return ap
+
+
 def main(argv=None):
-    ap = argparse.ArgumentParser(
-        description="Recupera carpetas y archivos de un pendrive FAT32/exFAT formateado.")
-    ap.add_argument("origen", nargs="?", help="imagen del pendrive (.img) o dispositivo (/dev/sdX)")
-    ap.add_argument("destino", nargs="?", help="carpeta donde guardar lo recuperado (en OTRO disco)")
-    ap.add_argument("--tipo", choices=["fat32", "exfat"], help="forzar el tipo de sistema de archivos")
-    ap.add_argument("--borrados", action="store_true",
-                    help="incluir archivos que ya estaban borrados antes del formateo")
-    ap.add_argument("--solo-listar", action="store_true", help="mostrar lo encontrado sin copiar")
-    ap.add_argument("--sin-huerfanos", action="store_true",
-                    help="no buscar archivos sin carpeta (los que estaban sueltos en la raiz)")
-    ap.add_argument("--solo-huerfanos", action="store_true",
-                    help="extraer solo los archivos sin carpeta, sin copiar el resto")
-    ap.add_argument("--solo-fotos", action="store_true",
-                    help="rescatar solo fotos y videos, cada uno en su carpeta")
-    ap.add_argument("--imagen", metavar="ARCHIVO",
-                    help="copiar primero el origen a este archivo y recuperar desde la copia "
-                         "(tolera sectores danados; si se interrumpe, se reanuda)")
-    ap.add_argument("--diagnostico", action="store_true",
-                    help="revisar en segundos que dejo el formateo, sin escanear")
-    ap.add_argument("--nombres", metavar="CARPETA",
-                    help="proponer nombres para las carpetas recuperadas sin nombre y "
-                         "renombrar las que elijas")
-    ap.add_argument("--deshacer-nombres", metavar="CARPETA",
-                    help="volver a poner los nombres anteriores a --nombres")
+    global W
+    argv = sys.argv[1:] if argv is None else argv
+    pre = argparse.ArgumentParser(add_help=False)
+    pre.add_argument("--lang", choices=LANGS)
+    early, _rest = pre.parse_known_args(argv)
+    W = set_language(early.lang or system_language())
+    ap = parser()
     args = ap.parse_args(argv)
+    names = W["names"]
 
-    if args.nombres:
-        return review_names(args.nombres)
-    if args.deshacer_nombres:
-        return undo_names(args.deshacer_nombres)
-    if not args.origen or not args.destino:
-        ap.error("faltan el origen y el destino")
+    if args.names:
+        return review_names(args.names)
+    if args.undo_names:
+        return undo_names(args.undo_names)
+    if not args.source or not args.dest:
+        ap.error(_("the source and the destination are missing"))
 
-    if args.imagen:
+    if args.image:
         try:
-            status = make_image(args.origen, args.imagen)
+            status = make_image(args.source, args.image)
         except PermissionError:
-            print("Sin permiso para leer el origen. Ejecutalo con sudo.")
+            print(_("No permission to read the source. Run it with sudo (or as administrator on Windows)."))
             return 1
         except UnsafeDestination:
-            print("La copia no puede guardarse en el mismo dispositivo que el origen.")
+            print(_("The copy cannot be saved on the same device as the source."))
             return 1
         if status:
             return status
-        args.origen = args.imagen
+        args.source = args.image
 
     try:
-        session = Session(args.origen, include_deleted=args.borrados, fs_type=args.tipo,
-                          find_orphans=not args.sin_huerfanos, names=NAMES)
+        session = Session(args.source, include_deleted=args.deleted, fs_type=args.fs_type,
+                          find_orphans=not args.no_orphans, names=names)
     except PermissionError:
-        print("Sin permiso para leer el origen. Ejecutalo con sudo.")
+        print(_("No permission to read the source. Run it with sudo (or as administrator on Windows)."))
         return 1
 
-    if args.diagnostico:
+    if args.diagnose:
         print_diagnosis(diagnose(session.disk))
         return 0
 
@@ -228,16 +376,15 @@ def main(argv=None):
     result = None
     for e in session.scan():
         if isinstance(e, ev.SourceOpened):
-            print(f"Origen: {args.origen} ({fmt_size(e.size)})  -- solo lectura")
+            print(_("Source: {} ({})  -- read-only").format(args.source, fmt_size(e.size)))
             if e.current_fs:
-                print(f"Formato actual (despues del formateo): {e.current_fs}")
+                print(_("Current format (after the format): {}").format(e.current_fs))
         elif isinstance(e, ev.ScanProgress):
-            progress("Escaneando", e.done, e.total, t0)
+            progress(_("Scanning"), e.done, e.total, t0)
         elif isinstance(e, ev.NothingFound):
             sys.stderr.write("\n")
-            print("No se encontraron carpetas FAT32/exFAT. Puede que haya sido un formateo "
-                  "completo (sobrescribe todo) u otro sistema de archivos (NTFS). "
-                  "Para rescatar archivos sueltos usa PhotoRec.")
+            print(_("No FAT32/exFAT folders were found. It may have been a full format (it overwrites "
+                    "everything) or another file system (NTFS). To rescue loose files, use PhotoRec."))
             return 1
         elif isinstance(e, ev.ScanFinished):
             result = e.result
@@ -246,78 +393,77 @@ def main(argv=None):
     r, g = result, result.geometry
     hits, checked = r.calibration
     if r.fs == "fat32":
-        print(f"Formato: FAT32  |  cluster {fmt_size(g.cs)}  |  carpetas halladas {checked} "
-              f"({hits} coinciden con la geometria)")
+        print(_("Format: FAT32  |  cluster {}  |  folders found {} ({} match the geometry)").format(
+            fmt_size(g.cs), checked, hits))
     else:
-        print(f"Formato: exFAT  |  cluster {fmt_size(g.cs)}  |  bloques de carpeta hallados "
-              f"{r.folder_blocks} ({hits}/{checked} referencias coinciden)")
-    print(f"Carpetas: {len(r.contents)}  |  archivos: {len(r.plans)}  |  total: {fmt_size(r.total_bytes)}")
+        print(_("Format: exFAT  |  cluster {}  |  folder blocks found {} ({}/{} references match)").format(
+            fmt_size(g.cs), r.folder_blocks, hits, checked))
+    print(_("Folders: {}  |  files: {}  |  total: {}").format(len(r.contents), len(r.plans), fmt_size(r.total_bytes)))
     if r.fat_state == "unreliable":
-        print("La tabla FAT antigua no es fiable: no se usa.")
+        print(_("The old FAT is not reliable: it is not used."))
     elif r.fat_state == "kept":
-        print(f"Tabla FAT antigua conservada: {r.chained} de {r.fragmented} archivos fragmentados "
-              "tienen su cadena completa.")
+        print(_("Old FAT kept: {} of {} fragmented files have their full chain.").format(r.chained, r.fragmented))
     elif r.fragmented:
-        print(f"Sin tabla FAT antigua: {r.fragmented} archivos fragmentados se copiaran como contiguos.")
+        print(_("No old FAT: {} fragmented files will be copied as contiguous.").format(r.fragmented))
     if r.orphans:
-        print(f"Huerfanos (raiz y sin carpeta): {len(r.orphans)} candidatos, "
-              f"{fmt_size(sum(o.nclus for o in r.orphans) * g.cs)} como maximo")
+        print(_("Files without a folder (root and loose): {} candidates, {} at most").format(
+            len(r.orphans), fmt_size(sum(o.nclus for o in r.orphans) * g.cs)))
     if r.root_recovered:
-        print("Raiz antigua recuperada: las carpetas de primer nivel conservan su nombre.")
+        print(_("Old root recovered: the top folders keep their names."))
     for old, new in r.renamed.items():
-        print(f"Nombre original recuperado: {old} -> {new}")
+        print(_("Original name recovered: {} -> {}").format(old, new))
 
-    if args.solo_listar:
-        for rel, en, _, _ in sorted(r.plans, key=lambda t: (t[0].lower(), t[1].name.lower())):
+    if args.list_only:
+        for rel, en, _a, _b in sorted(r.plans, key=lambda t: (t[0].lower(), t[1].name.lower())):
             print(f"  {os.path.join(rel, en.name)}   ({fmt_size(en.size)})")
         for o in r.orphans:
-            print(f"  {NAMES.orphan_dir}/{NAMES.orphan_file.format(o.cluster)}.{o.ext}   "
-                  f"(hasta {fmt_size(o.nclus * g.cs)}, {METHODS[o.method]})")
+            print(_("  {}/{}.{}   (up to {}, {})").format(
+                names.orphan_dir, names.orphan_file.format(o.cluster), o.ext,
+                fmt_size(o.nclus * g.cs), W["methods"][o.method]))
         return 0
 
-    os.makedirs(args.destino, exist_ok=True)
-    report_path = os.path.join(args.destino, "_informe_huerfanos.csv" if args.solo_huerfanos
-                               else REPORT)
+    os.makedirs(args.dest, exist_ok=True)
+    report_path = os.path.join(args.dest, ORPHAN_REPORT[_lang] if args.only_orphans else W["report"])
     t0 = time.time()
     finished = None
     try:
         with open(report_path, "w", newline="", encoding="utf-8") as rep:
             w = csv.writer(rep)
-            w.writerow(["ruta", "tamano_bytes", "fecha", "estado", "metodo"])
-            for e in session.recover(args.destino, only_orphans=args.solo_huerfanos,
-                                             only_media=args.solo_fotos):
+            w.writerow(W["columns"])
+            for e in session.recover(args.dest, only_orphans=args.only_orphans,
+                                     only_media=args.only_photos):
                 if isinstance(e, ev.CopyProgress):
-                    progress("Copiando", e.done, e.total, t0)
+                    progress(_("Copying"), e.done, e.total, t0)
                 elif isinstance(e, ev.FileRecovered):
-                    estado = "; ".join(WARNINGS[x] for x in e.warnings) or "ok"
+                    state = "; ".join(W["warnings"][x] for x in e.warnings) or W["ok"]
                     w.writerow([e.path, e.size, e.mtime.isoformat() if e.mtime else "",
-                                estado, METHODS[e.method]])
+                                state, W["methods"][e.method]])
                 elif isinstance(e, ev.OrphanRecovered):
                     w.writerow([e.path, e.size, e.mtime.isoformat() if e.mtime else "",
-                                ORPHAN_STATUS[e.status], METHODS[e.method]])
+                                W["orphan_status"][e.status], W["methods"][e.method]])
                 elif isinstance(e, ev.RecoverFinished):
                     finished = e
     except UnsafeDestination:
-        print("El destino esta en el mismo dispositivo que el origen. Elige una carpeta en otro disco.")
+        print(_("The destination is on the same device as the source. Choose a folder on another disk."))
         return 1
     sys.stderr.write("\n")
 
     f = finished
-    print(f"\nListo: {f.ok} archivos ok, {f.warned} con avisos.  Informe: {report_path}")
+    print(_("\nDone: {} files ok, {} with warnings.  Report: {}").format(f.ok, f.warned, report_path))
     if f.orphans_found:
-        print(f"Huerfanos guardados en {NAMES.orphan_dir}: {f.orphans_saved} (de {f.orphans_found} "
-              "candidatos). Entre ellos estan los archivos de la raiz, sin su nombre original.")
+        print(_("Files without a folder saved in {}: {} (of {} candidates). The root's files are among "
+                "them, without their original names.").format(names.orphan_dir, f.orphans_saved, f.orphans_found))
     if f.orphans_duplicate:
-        print(f"{f.orphans_duplicate} huerfano(s) eran copia de un archivo ya recuperado y no se repiten.")
-    if r.unnamed_tops and not args.solo_huerfanos:
-        print(f"{r.unnamed_tops} carpeta(s) de primer nivel no conservaron su nombre "
-              "(CARPETA_SIN_NOMBRE_<n>); su contenido si. Nombres propuestos:")
-        print_suggestions(name_suggestions(args.destino))
-        print(f"Nada se ha renombrado. Para elegir cuales aplicar: unformat-usb-cli --nombres {args.destino}")
+        print(_("{} file(s) without a folder were a copy of a file already recovered and are not "
+                "repeated.").format(f.orphans_duplicate))
+    if r.unnamed_tops and not args.only_orphans:
+        print(_("{} top folder(s) did not keep their name; their content did. Proposed names:").format(r.unnamed_tops))
+        print_suggestions(name_suggestions(args.dest))
+        print(_("Nothing has been renamed. To choose which to apply: unformat-usb-cli --names {}").format(args.dest))
     if f.bad_sectors:
-        print(f"Atencion: {f.bad_sectors} sectores ilegibles (rellenados con ceros).")
+        print(_("Warning: {} unreadable sectors (filled with zeros).").format(f.bad_sectors))
     if not f.orphans_found:
-        print("Archivos que estaban sueltos en la raiz: rescatalos con PhotoRec si faltan.")
+        print(_("Files that were loose in the root: rescue them with PhotoRec if any are missing."))
     return 0
 
 
@@ -325,7 +471,7 @@ def run():
     try:
         sys.exit(main())
     except KeyboardInterrupt:
-        print("\nCancelado.")
+        print(_("\nCancelled."))
         sys.exit(130)
 
 

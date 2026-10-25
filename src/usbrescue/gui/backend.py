@@ -24,7 +24,7 @@ from ..core.session import Session, UnsafeDestination, file_key
 from ..core.util import fmt_size as _fmt_size
 from ..core.util import sanitize
 from ..devices import Device, list_removable
-from . import texts
+from .. import texts
 from .tree_model import FolderTreeModel
 
 IMAGE_TYPES = ("jpg", "jpeg", "png", "gif", "bmp", "webp")

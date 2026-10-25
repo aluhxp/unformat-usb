@@ -1,7 +1,8 @@
-"""Words the window writes to disk (folder names, the report), per language.
-The screens themselves are translated with Qt (see tools/i18n.py)."""
+"""Words the program writes to disk (folder names, the report), per language.
+The window and the command line share them; the screens themselves are
+translated with Qt (see tools/i18n.py)."""
 
-from ..core.model import Names
+from .core.model import Names
 
 LANGUAGES = ("en", "es", "pt")
 # each language in its own words, for the menu

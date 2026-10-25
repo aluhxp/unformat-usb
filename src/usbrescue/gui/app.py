@@ -8,7 +8,7 @@ from PySide6.QtGui import QGuiApplication
 from PySide6.QtQml import QQmlApplicationEngine
 
 from ..brand import APP_NAME
-from . import texts
+from .. import texts
 from .backend import Backend
 
 QML_DIR = os.path.join(os.path.dirname(__file__), "qml")

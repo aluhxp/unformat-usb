@@ -47,7 +47,7 @@ Privacy: the program sends nothing anywhere ([Code signing policy and privacy](d
 python -m venv .venv && .venv/bin/pip install -e ".[dev,gui]"
 .venv/bin/python -m pytest -q          # tests (Linux formats test images with mkfs.exfat / mkfs.vfat)
 .venv/bin/unformat-usb                  # the window
-.venv/bin/unformat-usb-cli --help       # the command line (still in Spanish only)
+.venv/bin/unformat-usb-cli --help       # the command line (English; --lang es for Spanish)
 ```
 
 - `src/usbrescue/core/`: the engine, plain Python with no dependencies. Every step is a generator of events.
