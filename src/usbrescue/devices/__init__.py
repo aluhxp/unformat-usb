@@ -18,4 +18,10 @@ def list_removable():
     if sys.platform.startswith("linux"):
         from . import linux
         return linux.list_removable()
-    return []           # Windows and macOS come later
+    if sys.platform == "win32":
+        from . import windows
+        return windows.list_removable()
+    if sys.platform == "darwin":
+        from . import macos
+        return macos.list_removable()
+    return []
