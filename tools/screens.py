@@ -38,8 +38,6 @@ def sample_picture():
 
 
 def main():
-    from usbrescue import brand
-    brand.PAYPAL_ME = brand.PAYPAL_ME or "example"     # so the donation card shows
     out = sys.argv[1]
     os.makedirs(out, exist_ok=True)
     work = tempfile.mkdtemp(prefix="usbrescue-screens-")

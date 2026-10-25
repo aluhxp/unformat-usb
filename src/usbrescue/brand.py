@@ -1,27 +1,28 @@
 """The one place where the product name and the donation link live."""
 
 import re
+import urllib.parse
 
 APP_NAME = "Rescatín"
 VERSION = "0.1.0"
 
 # Voluntary donations. They are offered only after a rescue that worked,
 # never before and never in the way. Empty: the offer is not shown at all.
-PAYPAL_ME = ""                  # the name after paypal.me/, e.g. "aluhxp"
+PAYPAL_EMAIL = "aluhxp@gmail.com"    # the PayPal account donations go to
 DONATION_AMOUNTS = (3, 5, 10)
 DONATION_CURRENCY = "USD"
 DONATION_MAX = 10000            # a typo like 5000000 should not reach PayPal
 
 
 def donation_url(amount=None):
-    """PayPal.me link, with the amount filled in when one is given."""
-    if not PAYPAL_ME:
+    """PayPal's donation page for the account, with the amount filled in."""
+    if not PAYPAL_EMAIL:
         return ""
-    url = f"https://www.paypal.com/paypalme/{PAYPAL_ME}"
+    query = {"business": PAYPAL_EMAIL, "currency_code": DONATION_CURRENCY,
+             "item_name": f"{APP_NAME}"}
     if amount:
-        value = f"{amount:.2f}".rstrip("0").rstrip(".")
-        url += f"/{value}{DONATION_CURRENCY}"
-    return url
+        query["amount"] = f"{amount:.2f}"
+    return "https://www.paypal.com/donate/?" + urllib.parse.urlencode(query)
 
 
 def parse_amount(text):

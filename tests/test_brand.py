@@ -1,16 +1,21 @@
+from urllib.parse import parse_qs, urlparse
+
 from usbrescue import brand
 
 
-def test_no_link_means_no_offer(monkeypatch):
-    monkeypatch.setattr(brand, "PAYPAL_ME", "")
+def test_no_account_means_no_offer(monkeypatch):
+    monkeypatch.setattr(brand, "PAYPAL_EMAIL", "")
     assert brand.donation_url(5) == ""
 
 
-def test_the_link_carries_the_amount(monkeypatch):
-    monkeypatch.setattr(brand, "PAYPAL_ME", "someone")
-    assert brand.donation_url(5) == "https://www.paypal.com/paypalme/someone/5USD"
-    assert brand.donation_url(7.5) == "https://www.paypal.com/paypalme/someone/7.5USD"
-    assert brand.donation_url() == "https://www.paypal.com/paypalme/someone"
+def test_the_link_goes_to_the_account_with_the_amount(monkeypatch):
+    monkeypatch.setattr(brand, "PAYPAL_EMAIL", "someone@example.com")
+    url = urlparse(brand.donation_url(7.5))
+    assert (url.netloc, url.path) == ("www.paypal.com", "/donate/")
+    q = parse_qs(url.query)
+    assert q["business"] == ["someone@example.com"]
+    assert (q["amount"], q["currency_code"]) == (["7.50"], ["USD"])
+    assert "amount" not in parse_qs(urlparse(brand.donation_url()).query)
 
 
 def test_typed_amounts():
