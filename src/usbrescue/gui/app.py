@@ -1,10 +1,11 @@
 """Starts the window."""
 
+import glob
 import os
 import sys
 
 from PySide6.QtCore import QSettings, QTranslator
-from PySide6.QtGui import QGuiApplication
+from PySide6.QtGui import QFontDatabase, QGuiApplication
 from PySide6.QtQml import QQmlApplicationEngine
 
 from ..brand import APP_NAME
@@ -13,6 +14,7 @@ from .backend import Backend
 
 QML_DIR = os.path.join(os.path.dirname(__file__), "qml")
 I18N_DIR = os.path.join(os.path.dirname(__file__), "i18n")
+FONTS_DIR = os.path.join(os.path.dirname(__file__), "fonts")
 
 
 os.environ.setdefault("QT_QUICK_CONTROLS_STYLE", "Basic")
@@ -21,6 +23,9 @@ os.environ.setdefault("QT_QUICK_CONTROLS_STYLE", "Basic")
 def build(app, language=texts.DEFAULT, remember=False):
     """Returns (engine, backend) with the main window loaded. English is the
     language the screens are written in; others come from i18n/<lang>.qm."""
+    # Nunito travels with the program, so it looks the same on every system
+    for font in glob.glob(os.path.join(FONTS_DIR, "*.ttf")):
+        QFontDatabase.addApplicationFont(font)
     backend = Backend(app, language=language)
     engine = QQmlApplicationEngine(app)
     translator = QTranslator(app)

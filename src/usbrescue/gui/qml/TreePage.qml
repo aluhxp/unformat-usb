@@ -104,11 +104,26 @@ Item {
                     Item {
                         width: 20; height: 22
                         anchors.verticalCenter: parent.verticalCenter
-                        Txt {
+                        Canvas {
+                            // a drawn chevron: the same on every system and font
+                            id: chevron
                             visible: row.hasChildren
                             anchors.centerIn: parent
-                            text: "›"; font.pixelSize: 22; font.weight: Font.Bold; color: Theme.soft
+                            width: 14; height: 14
                             rotation: row.expanded ? 90 : 0
+                            Behavior on rotation { NumberAnimation { duration: 120 } }
+                            property color ink: Theme.soft
+                            onInkChanged: requestPaint()
+                            onPaint: {
+                                const ctx = getContext("2d")
+                                ctx.clearRect(0, 0, width, height)
+                                ctx.strokeStyle = ink
+                                ctx.lineWidth = 2.4
+                                ctx.lineCap = "round"; ctx.lineJoin = "round"
+                                ctx.beginPath()
+                                ctx.moveTo(5, 2.5); ctx.lineTo(10, 7); ctx.lineTo(5, 11.5)
+                                ctx.stroke()
+                            }
                         }
                         TapHandler { enabled: row.hasChildren; onTapped: backend.toggleExpanded(row.index) }
                     }
@@ -174,7 +189,8 @@ Item {
                 id: previewBox
                 visible: page.st.preview.name !== undefined
                 width: parent.width
-                height: visible ? 170 : 0
+                // leaves room for a few files below it, whatever the window's size
+                height: visible ? Math.round(Math.max(96, Math.min(240, side.height * 0.36))) : 0
                 radius: 10
                 color: Theme.bg
                 clip: true

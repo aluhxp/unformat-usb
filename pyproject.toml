@@ -35,7 +35,7 @@ unformat-usb = "usbrescue.gui.app:run"
 where = ["src"]
 
 [tool.setuptools.package-data]
-"usbrescue.gui" = ["qml/*", "i18n/*.qm"]
+"usbrescue.gui" = ["qml/*", "i18n/*.qm", "fonts/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

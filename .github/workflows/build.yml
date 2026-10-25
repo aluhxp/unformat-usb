@@ -25,6 +25,7 @@ jobs:
           --name UnformatUSB --version-file version.txt --icon packaging/icon.ico
           --add-data "src/usbrescue/gui/qml;usbrescue/gui/qml"
           --add-data "src/usbrescue/gui/i18n;usbrescue/gui/i18n"
+          --add-data "src/usbrescue/gui/fonts;usbrescue/gui/fonts"
           packaging/unformat_usb_main.py
 
       # Check the packaged program itself, as someone would use it: first on
@@ -102,6 +103,7 @@ jobs:
           --osx-bundle-identifier io.github.aluhxp.unformatusb --icon packaging/icon.icns
           --add-data "src/usbrescue/gui/qml:usbrescue/gui/qml"
           --add-data "src/usbrescue/gui/i18n:usbrescue/gui/i18n"
+          --add-data "src/usbrescue/gui/fonts:usbrescue/gui/fonts"
           packaging/unformat_usb_main.py
       - name: Check the program on a disk image
         env:
@@ -136,6 +138,7 @@ jobs:
           --name UnformatUSB
           --add-data "src/usbrescue/gui/qml:usbrescue/gui/qml"
           --add-data "src/usbrescue/gui/i18n:usbrescue/gui/i18n"
+          --add-data "src/usbrescue/gui/fonts:usbrescue/gui/fonts"
           --add-data "src/usbrescue/helper.py:usbrescue"
           packaging/unformat_usb_main.py
       - name: Make the AppImage
