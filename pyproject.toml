@@ -7,6 +7,14 @@ name = "usbrescue"
 version = "0.1.0"
 description = "Recover files from a quick-formatted FAT32/exFAT USB drive. Read-only on the source."
 requires-python = ">=3.10"
+license = {text = "GPL-3.0-or-later"}
+classifiers = [
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: MacOS",
+    "Topic :: System :: Recovery Tools",
+]
 dependencies = []
 
 [project.optional-dependencies]

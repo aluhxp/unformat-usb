@@ -12,6 +12,7 @@ import time
 from PySide6.QtCore import Property, QObject, QTimer, QUrl, Signal, Slot
 from PySide6.QtGui import QDesktopServices
 
+from .. import brand
 from ..cli.main import KIND_WORDS, METHODS, ORPHAN_STATUS, WARNINGS
 from ..core import imaging, naming
 from ..core import model as ev
@@ -117,6 +118,29 @@ class Backend(QObject):
     @Property(str, constant=True)
     def defaultDestination(self):
         return self._default_dest
+
+    @Property(bool, constant=True)
+    def canDonate(self):
+        return bool(brand.donation_url())
+
+    @Property("QVariantList", constant=True)
+    def donationAmounts(self):
+        return list(brand.DONATION_AMOUNTS)
+
+    @Property(str, constant=True)
+    def donationCurrency(self):
+        return brand.DONATION_CURRENCY
+
+    @Slot(str, result=bool)
+    def donationAmountOk(self, text):
+        return brand.parse_amount(text) is not None
+
+    @Slot(str)
+    def donate(self, amount):
+        """Opens PayPal in the browser; nothing is paid from inside the app."""
+        value = brand.parse_amount(amount)
+        if value is not None:
+            QDesktopServices.openUrl(QUrl(brand.donation_url(value)))
 
     @Slot(float, result=str)
     def size(self, n):

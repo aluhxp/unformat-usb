@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls.Basic
 
 Item {
     id: page
@@ -6,8 +7,8 @@ Item {
 
     Column {
         anchors.fill: parent
-        anchors.margins: 30; anchors.leftMargin: 72; anchors.rightMargin: 72
-        spacing: 22
+        anchors.margins: 26; anchors.leftMargin: 72; anchors.rightMargin: 72
+        spacing: 16
 
         Row {
             spacing: 22; width: parent.width
@@ -19,6 +20,7 @@ Item {
                     text: qsTr("¡Listo! Rescatamos %1 archivos.").arg(win.num(page.st.sumOk + page.st.sumWarned + page.st.sumOrphans))
                 }
                 Txt { width: parent.width; color: Theme.soft; elide: Text.ElideMiddle; wrapMode: Text.NoWrap; text: qsTr("Están en %1").arg(page.st.destPath) }
+                Txt { width: parent.width; color: Theme.soft; font.pixelSize: 14; text: qsTr("Antes de volver a usar el pendrive, abre algunos archivos importantes para comprobar que están bien.") }
             }
         }
 
@@ -81,9 +83,65 @@ Item {
             Btn { id: drop; label: qsTr("Borrar la copia"); primary: false; implicitHeight: 40; onClicked: backend.deleteCopy() }
         }
 
-        Txt {
-            width: parent.width; color: Theme.soft; font.pixelSize: 15
-            text: qsTr("Abre algunos archivos importantes para comprobar que están bien antes de volver a usar el pendrive. El informe dice cuáles conviene revisar.")
+    }
+
+    // A voluntary thank-you, only after a rescue that worked. It never blocks anything.
+    Rectangle {
+        id: donation
+        visible: backend.canDonate && page.st.sumOk + page.st.sumWarned + page.st.sumOrphans > 0
+        anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
+        anchors.margins: 22; anchors.leftMargin: 72; anchors.rightMargin: 72
+        height: 84; radius: 18
+        color: Theme.warnBg; border.color: Theme.sun; border.width: 1
+
+        Column {
+            anchors.left: parent.left; anchors.leftMargin: 22
+            anchors.right: amounts.left; anchors.rightMargin: 16
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 2
+            Txt { width: parent.width; font.pixelSize: 17; font.weight: Font.ExtraBold; text: qsTr("¿Te ayudó? Invítanos un café.") }
+            Txt { width: parent.width; font.pixelSize: 13; color: Theme.warnInk; text: qsTr("Es voluntario. %1 es gratis, sin límites, y lo va a seguir siendo.").arg(appName) }
+        }
+        Row {
+            id: amounts
+            anchors.right: parent.right; anchors.rightMargin: 18
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 8
+            Repeater {
+                model: backend.donationAmounts
+                Btn {
+                    required property var modelData
+                    required property int index
+                    label: modelData + " " + backend.donationCurrency
+                    primary: index === 1
+                    implicitHeight: 42; implicitWidth: 84
+                    onClicked: backend.donate(String(modelData))
+                }
+            }
+            TextField {
+                id: other
+                width: 112; height: 42
+                placeholderText: qsTr("Otro monto")
+                placeholderTextColor: Theme.soft
+                inputMethodHints: Qt.ImhFormattedNumbersOnly
+                font.family: Theme.family; font.pixelSize: 15; font.weight: Font.Bold
+                color: Theme.ink
+                Accessible.name: qsTr("Otro monto, en %1").arg(backend.donationCurrency)
+                background: Rectangle {
+                    radius: 21; color: Theme.card
+                    border.color: other.activeFocus ? Theme.accent : Theme.line
+                    border.width: other.activeFocus ? 2 : 1
+                }
+                leftPadding: 16
+                onAccepted: if (backend.donationAmountOk(text)) backend.donate(text)
+            }
+            Btn {
+                label: qsTr("Donar")
+                implicitHeight: 42
+                visible: other.text.length > 0
+                enabledLook: backend.donationAmountOk(other.text)
+                onClicked: backend.donate(other.text)
+            }
         }
     }
 }
