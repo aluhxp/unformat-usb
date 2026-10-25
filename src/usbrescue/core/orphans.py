@@ -256,6 +256,9 @@ def zip_identify(path):
     return ext, title, when, ok
 
 
+PIECE_EXTS = ("txt", "sql", "xml", "html", "json")
+
+
 def save_orphan(disk, g, o, folder, names):
     """Writes the orphan and returns (path, size, date, status), or None when
     it turned out not to be a usable file."""
@@ -304,6 +307,11 @@ def save_orphan(disk, g, o, folder, names):
     name = stem
     if label:
         name += " - " + sanitize(label)
+    elif ext in PIECE_EXTS and names.text_pieces:
+        # most text found loose is a piece of something longer (a database
+        # dump, a log): kept, but aside, so the files with a name stand out
+        folder = os.path.join(folder, names.text_pieces)
+        os.makedirs(folder, exist_ok=True)
     dest = os.path.join(folder, f"{name}.{ext}")
     os.replace(tmp, dest)
     if when:

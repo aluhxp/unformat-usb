@@ -39,6 +39,7 @@ class Names:
     orphan_file: str = "orphan_{}"
     photo_label: str = "photo {}"       # a photo named by when it was taken
     link_label: str = "link {}"         # a note that is just a web address
+    text_pieces: str = "text pieces"    # subfolder for bits of text with nothing to name them by
 
 
 # ---------------------------------------------------------------- events
