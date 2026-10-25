@@ -26,10 +26,10 @@ dev = ["pytest"]
 gui = ["PySide6-Essentials>=6.6"]
 
 [project.scripts]
-usbrescue = "usbrescue.cli.main:run"
+unformat-usb-cli = "usbrescue.cli.main:run"
 
 [project.gui-scripts]
-rescatin = "usbrescue.gui.app:run"
+unformat-usb = "usbrescue.gui.app:run"
 
 [tool.setuptools.packages.find]
 where = ["src"]

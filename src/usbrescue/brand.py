@@ -3,7 +3,7 @@
 import re
 import urllib.parse
 
-APP_NAME = "Rescatín"
+APP_NAME = "Unformat USB"
 VERSION = "0.1.0"
 
 # Voluntary donations. They are offered only after a rescue that worked,

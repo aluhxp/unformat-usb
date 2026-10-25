@@ -21,16 +21,16 @@ jobs:
       # asks once when the program opens
       - run: >
           pyinstaller --noconfirm --onefile --windowed --uac-admin
-          --name Rescatin
+          --name UnformatUSB
           --add-data "src/usbrescue/gui/qml;usbrescue/gui/qml"
           --add-data "src/usbrescue/gui/i18n;usbrescue/gui/i18n"
-          packaging/rescatin_main.py
+          packaging/unformat_usb_main.py
       - uses: actions/upload-artifact@v4
         with:
-          name: Rescatin-windows
-          path: dist/Rescatin.exe
+          name: UnformatUSB-windows
+          path: dist/UnformatUSB.exe
           retention-days: 14
       - if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/Rescatin.exe
+          files: dist/UnformatUSB.exe

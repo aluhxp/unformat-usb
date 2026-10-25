@@ -92,7 +92,7 @@ def review_names(dest):
     except naming.RenameError as e:
         print(f"No se pudo renombrar: ya existe o falta {e}. Lo anterior quedó hecho.")
         return 1
-    print(f"Renombradas {len(done)}. Para deshacerlo: usbrescue --deshacer-nombres {dest}")
+    print(f"Renombradas {len(done)}. Para deshacerlo: unformat-usb-cli --deshacer-nombres {dest}")
     return 0
 
 
@@ -313,7 +313,7 @@ def main(argv=None):
         print(f"{r.unnamed_tops} carpeta(s) de primer nivel no conservaron su nombre "
               "(CARPETA_SIN_NOMBRE_<n>); su contenido si. Nombres propuestos:")
         print_suggestions(name_suggestions(args.destino))
-        print(f"Nada se ha renombrado. Para elegir cuales aplicar: usbrescue --nombres {args.destino}")
+        print(f"Nada se ha renombrado. Para elegir cuales aplicar: unformat-usb-cli --nombres {args.destino}")
     if f.bad_sectors:
         print(f"Atencion: {f.bad_sectors} sectores ilegibles (rellenados con ceros).")
     if not f.orphans_found:
