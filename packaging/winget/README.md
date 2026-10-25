@@ -5,7 +5,7 @@ Manifests for `winget install aluhxp.UnformatUSB`. To send a version to
 
 ```
 winget install wingetcreate
-wingetcreate submit packaging\winget\0.1.0
+wingetcreate submit packaging\winget\0.1.1
 ```
 
 For a new version: `wingetcreate update aluhxp.UnformatUSB --version X.Y.Z --urls <exe url> --submit`.
