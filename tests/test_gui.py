@@ -322,3 +322,14 @@ def test_every_screen_loads_without_a_qml_error(app):
     finally:
         qInstallMessageHandler(None)
     assert problems == []
+
+
+def test_only_photos_and_videos_from_the_window(app, scanned, tmp_path):
+    scanned.setMediaOnly(True)
+    assert scanned.state["selectedFiles"] == 12            # the photos in Fotos/viaje_*
+    out = tmp_path / "out"
+    scanned.setWithOrphans(False)
+    scanned.recover(str(out))
+    wait_for(app, scanned, "done")
+    got = [k for k in files_under(out) if not k.startswith("_")]
+    assert len(got) == 12 and all(k.endswith(".jpg") and k.count("/") == 2 for k in got)

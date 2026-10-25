@@ -179,6 +179,8 @@ def main(argv=None):
                     help="no buscar archivos sin carpeta (los que estaban sueltos en la raiz)")
     ap.add_argument("--solo-huerfanos", action="store_true",
                     help="extraer solo los archivos sin carpeta, sin copiar el resto")
+    ap.add_argument("--solo-fotos", action="store_true",
+                    help="rescatar solo fotos y videos, cada uno en su carpeta")
     ap.add_argument("--imagen", metavar="ARCHIVO",
                     help="copiar primero el origen a este archivo y recuperar desde la copia "
                          "(tolera sectores danados; si se interrumpe, se reanuda)")
@@ -282,7 +284,8 @@ def main(argv=None):
         with open(report_path, "w", newline="", encoding="utf-8") as rep:
             w = csv.writer(rep)
             w.writerow(["ruta", "tamano_bytes", "fecha", "estado", "metodo"])
-            for e in session.recover(args.destino, only_orphans=args.solo_huerfanos):
+            for e in session.recover(args.destino, only_orphans=args.solo_huerfanos,
+                                             only_media=args.solo_fotos):
                 if isinstance(e, ev.CopyProgress):
                     progress("Copiando", e.done, e.total, t0)
                 elif isinstance(e, ev.FileRecovered):

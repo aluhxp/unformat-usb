@@ -11,6 +11,7 @@ from . import fat32
 from .boot import read_boot
 from .clues import name_clues
 from .exfat import ExfatTree
+from .kinds import MEDIA, is_media
 from .model import (CopyProgress, FileRecovered, FolderFound, GeometryCalibrated, Names,
                     NothingFound, OrphanRecovered, RecoverFinished, ScanFinished,
                     ScanProgress, ScanResult, SourceOpened, TreeReset)
@@ -250,10 +251,11 @@ class Session:
     # ------------------------------------------------------------- recover
 
     def recover(self, dest, *, only_orphans=False, folders=None, with_orphans=True,
-                skip=None, plans=None):
+                skip=None, plans=None, only_media=False):
         """folders: relative folder paths to recover (None = all of them).
         skip: file keys to leave out. plans: recover exactly these instead,
-        which is how folders are rescued before the scan ends."""
+        which is how folders are rescued before the scan ends.
+        only_media: just photos and videos, each still in its own folder."""
         r, disk, g = self.result, self.disk, self.geometry
         dir_clusters = r.dir_clusters if r else self.live.dir_cls
         check_destination(self.source_path, dest)
@@ -269,6 +271,9 @@ class Session:
             plans = [p for p in plans if p[0] in folders]
         if skip:
             plans = [p for p in plans if file_key(p[1]) not in skip]
+        if only_media:
+            plans = [p for p in plans if is_media(p[1].name)]
+            orphans = [o for o in orphans if o.ext in MEDIA]
         total = sum(p[1].size for p in plans)
         for rel, en, runs, method in plans:
             folder = os.path.join(dest, rel)

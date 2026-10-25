@@ -275,12 +275,24 @@ Item {
         id: bottom
         anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
         anchors.margins: 20; anchors.leftMargin: 32; anchors.rightMargin: 32
-        height: 84
+        height: 112
 
         Column {
             anchors.left: parent.left; anchors.right: go.left; anchors.rightMargin: 20
             anchors.verticalCenter: parent.verticalCenter
             spacing: 8
+            Row {
+                spacing: 10
+                Check {
+                    checked: page.st.mediaOnly
+                    name: qsTr("Solo fotos y videos")
+                    onToggled: (value) => backend.setMediaOnly(value)
+                }
+                Txt {
+                    font.pixelSize: 15
+                    text: qsTr("Solo fotos y videos, cada uno en su carpeta")
+                }
+            }
             Row {
                 visible: !page.scanning && page.st.orphanCount > 0
                 spacing: 10
@@ -291,9 +303,12 @@ Item {
                 }
                 Txt {
                     font.pixelSize: 15
-                    text: page.st.orphanCount === 1
+                    readonly property int n: page.st.mediaOnly ? page.st.mediaOrphans : page.st.orphanCount
+                    text: page.st.mediaOnly
+                        ? qsTr("Incluir %1 fotos y videos sin carpeta").arg(win.num(n))
+                        : n === 1
                         ? qsTr("Incluir 1 archivo sin carpeta (estaba suelto, fuera de las carpetas)")
-                        : qsTr("Incluir %1 archivos sin carpeta (los que estaban sueltos, fuera de las carpetas)").arg(win.num(page.st.orphanCount))
+                        : qsTr("Incluir %1 archivos sin carpeta (los que estaban sueltos, fuera de las carpetas)").arg(win.num(n))
                 }
             }
             Row {
@@ -315,7 +330,7 @@ Item {
             id: go
             anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
             enabledLook: page.scanning ? page.st.canRescueNow
-                : page.st.selectedFiles + (page.st.withOrphans ? page.st.orphanCount : 0) > 0
+                : page.st.selectedFiles + (page.st.withOrphans ? (page.st.mediaOnly ? page.st.mediaOrphans : page.st.orphanCount) : 0) > 0
             label: (page.scanning ? qsTr("Rescatar ya lo marcado (%1)") : qsTr("Rescatar lo marcado (%1)")).arg(backend.size(page.st.selectedBytes))
             onClicked: backend.recover(page.destination)
         }

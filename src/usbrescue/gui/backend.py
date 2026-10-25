@@ -16,6 +16,7 @@ from ..cli.main import KIND_WORDS, METHODS, ORPHAN_STATUS, WARNINGS
 from ..core import imaging, naming
 from ..core import model as ev
 from ..core.diagnose import diagnose
+from ..core.kinds import MEDIA, is_media
 from ..core.orphans import looks_text
 from ..core.reader import HelperSource
 from ..core.session import Session, UnsafeDestination, file_key
@@ -86,7 +87,7 @@ class Backend(QObject):
             mode="direct", imgProgress=0.0, imgEta=-1, imgSpeed=0.0, imgBad=0,
             imgRetrying=False, imagePath="", imageMade=False,
             scanProgress=0.0, scanEta=-1, foundFiles=0, foundFolders=0, foundBytes=0,
-            orphanCount=0, rootRecovered=False, withOrphans=True,
+            orphanCount=0, mediaOrphans=0, rootRecovered=False, withOrphans=True, mediaOnly=False,
             selectedFiles=0, selectedBytes=0, canRescueNow=False, early=False, rescuedEarly=0,
             needsPermission=False, folderId=-2, folderName="", files=[], filesHidden=0,
             preview={},
@@ -267,19 +268,21 @@ class Backend(QObject):
             if self._early and self._session.result is None:
                 # rescue what was asked for right here, between two steps of
                 # the scan: nothing else touches the tree meanwhile
-                dest, clusters, skip = self._early
+                dest, clusters, skip, media = self._early
                 self._early = None
                 paused = time.time()
                 plans = self._session.live_plans(clusters)
+                if media:
+                    plans = [p for p in plans if is_media(p[1].name)]
                 self._copy(dest, "early", plans=plans, skip=skip)
                 self._events.put(("early_done", (clusters, {file_key(p[1]) for p in plans} - skip)))
                 self._scan_started += time.time() - paused
         if self._early:                 # asked at the very last moment
-            dest, clusters, skip = self._early
+            dest, clusters, skip, media = self._early
             self._early = None
             r = self._session.result
             self._copy(dest, "recover", folders={r.paths[c] for c in clusters if c in r.paths},
-                       skip=skip, with_orphans=False)
+                       skip=skip, with_orphans=False, only_media=media)
 
     def _copy(self, dest, kind, **options):
         os.makedirs(dest, exist_ok=True)
@@ -313,21 +316,36 @@ class Backend(QObject):
         if self._session.result is None:
             # the scan is still running: its own thread does the copying
             self._set(early=True)
-            self._early = (dest, folders, skip)
+            self._early = (dest, folders, skip, self._s["mediaOnly"])
             return
         r = self._session.result
         paths = {r.paths[c] for c in folders} | {""}
-        with_orphans = self._s["withOrphans"]
+        with_orphans, media = self._s["withOrphans"], self._s["mediaOnly"]
         self._run(lambda: self._copy(dest, "recover", folders=paths, skip=skip,
-                                     with_orphans=with_orphans))
+                                     with_orphans=with_orphans, only_media=media))
 
     def _selection(self):
         """(folders, files, bytes) ticked, minus the files unticked one by one."""
         folders, files, size = self._tree.selected()
+        if self._s.get("mediaOnly") and self._session:
+            # only photos and videos count: look at what each folder holds
+            files = size = 0
+            for c in folders:
+                for en in self._session.folder_files(c):
+                    if is_media(en.name) and file_key(en) not in self._excluded:
+                        files, size = files + 1, size + en.size
+            return folders, files, size
         for folder, fsize in self._excluded.values():
             if folder in folders:
                 files, size = files - 1, size - fsize
         return folders, files, size
+
+    @Slot(bool)
+    def setMediaOnly(self, value):
+        """Rescue just photos and videos, each in its own folder."""
+        self._s["mediaOnly"] = value
+        _, files, size = self._selection()
+        self._set(selectedFiles=files, selectedBytes=size)
 
     # ---------------------------------------------------- events, UI thread
 
@@ -425,6 +443,7 @@ class Backend(QObject):
             updates.update(scanProgress=1.0, scanEta=0,
                            foundFolders=len(r.contents), foundFiles=len(r.plans),
                            foundBytes=r.total_bytes, orphanCount=len(r.orphans),
+                           mediaOrphans=sum(o.ext in MEDIA for o in r.orphans),
                            rootRecovered=r.root_recovered, sumUnnamed=r.unnamed_tops,
                            selectedFiles=files, selectedBytes=size)
         return False
