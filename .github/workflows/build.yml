@@ -53,10 +53,38 @@ jobs:
           Get-Content "$env:RUNNER_TEMP\disk.json"
           if ($p.ExitCode -ne 0) { exit 1 }
 
-      - uses: actions/upload-artifact@v4
+      - id: unsigned
+        uses: actions/upload-artifact@v4
         with:
           name: UnformatUSB-windows
           path: dist/UnformatUSB.exe
+          retention-days: 14
+
+      # Signing (SignPath Foundation, free for open source). It turns on by
+      # itself once the SIGNPATH_API_TOKEN secret and the SIGNPATH_ORGANIZATION_ID
+      # variable exist; until then the program stays unsigned. See docs/code-signing.md.
+      - id: can_sign
+        shell: bash
+        env:
+          TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+        run: echo "yes=$([ -n "$TOKEN" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+      - id: sign
+        if: steps.can_sign.outputs.yes == 'true'
+        uses: signpath/github-action-submit-signing-request@v1
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: unformat-usb
+          signing-policy-slug: ${{ startsWith(github.ref, 'refs/tags/v') && 'release-signing' || 'test-signing' }}
+          github-artifact-id: ${{ steps.unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: signed
+      - if: steps.sign.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: UnformatUSB-windows
+          path: signed/UnformatUSB.exe
+          overwrite: true
           retention-days: 14
 
   macos:
