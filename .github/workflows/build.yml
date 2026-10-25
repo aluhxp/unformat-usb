@@ -1,6 +1,6 @@
 name: build
 
-# a Windows program on every push to main, kept for a few days to try out;
+# the Windows program on every push to main, kept for two weeks to try out;
 # a tag like v0.2.0 also attaches it to a release
 on:
   push:
@@ -16,7 +16,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install -e ".[gui]" pyinstaller
+      - run: pip install -e ".[gui,dev]" pyinstaller
       # --uac-admin: reading a whole drive needs an administrator, so Windows
       # asks once when the program opens
       - run: >
@@ -25,6 +25,34 @@ jobs:
           --add-data "src/usbrescue/gui/qml;usbrescue/gui/qml"
           --add-data "src/usbrescue/gui/i18n;usbrescue/gui/i18n"
           packaging/unformat_usb_main.py
+
+      # Check the packaged program itself, as someone would use it: first on
+      # an image file, then on a real (virtual) disk Windows sees as a drive.
+      - name: Check the program on a disk image
+        shell: pwsh
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          python tools/ci_make_test_drive.py "$env:RUNNER_TEMP\drive.img"
+          $p = Start-Process dist\UnformatUSB.exe -Wait -PassThru -ArgumentList `
+               "--self-test", "$env:RUNNER_TEMP\drive.img", "$env:RUNNER_TEMP\out1", "$env:RUNNER_TEMP\image.json"
+          Get-Content "$env:RUNNER_TEMP\image.json"
+          if ($p.ExitCode -ne 0) { exit 1 }
+      - name: Check the program on a whole disk
+        shell: pwsh
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          $vhd = "$env:RUNNER_TEMP\drive.vhd"
+          "create vdisk file=`"$vhd`" maximum=80 type=fixed`nattach vdisk" | Out-File -Encoding ascii dp.txt
+          diskpart /s dp.txt
+          $n = (Get-DiskImage -ImagePath $vhd | Get-Disk).Number
+          python tools/ci_make_test_drive.py "$env:RUNNER_TEMP\drive2.img" "\\.\PhysicalDrive$n"
+          $p = Start-Process dist\UnformatUSB.exe -Wait -PassThru -ArgumentList `
+               "--self-test", "\\.\PhysicalDrive$n", "$env:RUNNER_TEMP\out2", "$env:RUNNER_TEMP\disk.json"
+          Get-Content "$env:RUNNER_TEMP\disk.json"
+          if ($p.ExitCode -ne 0) { exit 1 }
+
       - uses: actions/upload-artifact@v4
         with:
           name: UnformatUSB-windows
