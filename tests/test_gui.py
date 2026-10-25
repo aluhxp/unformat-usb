@@ -256,6 +256,23 @@ def test_in_spanish_folders_and_the_report_are_named_in_spanish(app, tmp_path):
     backend.back()
 
 
+def test_in_portuguese_folders_are_named_in_portuguese(app, tmp_path):
+    path = tmp_path / "pendrive.img"
+    img = build(path)
+    img.windows_quick_format()
+    img.close()
+    backend = Backend(language="pt")
+    assert backend.languageName == "Português"
+    assert [x["code"] for x in backend.languages] == ["en", "es", "pt"]
+    backend.addImage(QUrl.fromLocalFile(str(path)))
+    backend.choose(0)
+    wait_for(app, backend, "diagnosed")
+    backend.scan()
+    wait_for(app, backend, "scanned")
+    assert "Pasta sem nome 6" in names(backend)
+    backend.back()
+
+
 def formatted_image(tmp_path):
     path = tmp_path / "pendrive.img"
     img = build(path)
@@ -337,7 +354,7 @@ def test_every_screen_loads_without_a_qml_error(app):
     try:
         engine, backend = build_window(app)
         window = engine.rootObjects()[0]
-        for lang, phase in [(lang, phase) for lang in ("en", "es") for phase in ("pick", "diagnosing", "diagnosed", "imaging", "scanning", "scanned",
+        for lang, phase in [(lang, phase) for lang in ("en", "es", "pt") for phase in ("pick", "diagnosing", "diagnosed", "imaging", "scanning", "scanned",
                       "recovering", "done", "naming", "nothing", "error")]:
             if backend.language != lang:
                 backend.setLanguage(lang)

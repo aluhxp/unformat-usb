@@ -1,20 +1,23 @@
-"""Every text on the screens has its Spanish translation."""
+"""Every text on the screens has its translation, in every language."""
 
 import glob
 import os
 import re
 import xml.etree.ElementTree as ET
 
+import pytest
+
 GUI = os.path.join(os.path.dirname(__file__), "..", "src", "usbrescue", "gui")
 
 
-def test_every_screen_text_is_translated():
+@pytest.mark.parametrize("lang", ["es", "pt"])
+def test_every_screen_text_is_translated(lang):
     texts = set()
     for path in glob.glob(os.path.join(GUI, "qml", "*.qml")):
         for m in re.finditer(r'qsTr\("((?:[^"\\]|\\.)*)"\)', open(path, encoding="utf-8").read()):
             texts.add(m.group(1).replace('\\"', '"'))
     done = {}
-    for msg in ET.parse(os.path.join(GUI, "i18n", "es.ts")).getroot().iter("message"):
+    for msg in ET.parse(os.path.join(GUI, "i18n", f"{lang}.ts")).getroot().iter("message"):
         tr = msg.find("translation")
         if tr is not None and (tr.text or "").strip() and tr.get("type") is None:
             done[msg.findtext("source")] = tr.text

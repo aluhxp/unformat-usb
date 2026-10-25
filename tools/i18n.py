@@ -19,7 +19,7 @@ import xml.etree.ElementTree as ET
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 QML = os.path.join(ROOT, "src", "usbrescue", "gui", "qml")
 I18N = os.path.join(ROOT, "src", "usbrescue", "gui", "i18n")
-LANGS = ["es"]
+LANGS = ["es", "pt"]
 
 
 def tool(name):

@@ -3,7 +3,9 @@ The screens themselves are translated with Qt (see tools/i18n.py)."""
 
 from ..core.model import Names
 
-LANGUAGES = ("en", "es")
+LANGUAGES = ("en", "es", "pt")
+# each language in its own words, for the menu
+LANGUAGE_NAMES = {"en": "English", "es": "Español", "pt": "Português"}
 DEFAULT = "en"
 
 TEXTS = {
@@ -60,6 +62,33 @@ TEXTS = {
         decimal=",",
         date="%d/%m/%Y",
         locale="es_ES",
+    ),
+    "pt": dict(
+        names=Names(unnamed_folder="Pasta sem nome {}", lost_parent="Pastas soltas",
+                    orphan_dir="Arquivos sem pasta", orphan_file="arquivo_{}",
+                    photo_label="foto {}", link_label="link {}", text_pieces="Pedaços de texto"),
+        kinds={"photos": "Fotos", "videos": "Vídeos", "music": "Música", "documents": "Documentos",
+               "spreadsheets": "Planilhas", "presentations": "Apresentações",
+               "programs": "Programas", "disk_images": "Imagens de disco", "archives": "Compactados",
+               "code": "Código", "books": "Livros", "fonts": "Fontes", "mixed": "Diversos"},
+        report="_relatorio_recuperacao.csv",
+        names_log="_mudancas_de_nome.json",
+        copy="Cópia de {}.img",
+        columns=["caminho", "tamanho_bytes", "data", "estado", "metodo"],
+        ok="ok",
+        warnings={"no_data": "sem dados", "fragmented": "fragmentado: pode estar danificado",
+                  "maybe_fragmented": "talvez fragmentado: conferir", "incomplete": "incompleto",
+                  "was_deleted": "estava apagado", "bad_sectors": "setores ilegíveis"},
+        methods={"contiguous": "contíguo", "fat_chain": "cadeia FAT",
+                 "orphan_chain": "cadeia FAT órfã", "signature": "assinatura em cluster livre"},
+        orphan_status={"verified": "ok (verificado)", "pdf_valid": "ok (estrutura PDF válida)",
+                       "png_complete": "ok (PNG completo)", "damaged": "danificado",
+                       "chain_unverified": "cadeia FAT completa: não verificado",
+                       "size_approx": "tamanho aproximado: não verificado",
+                       "text": "texto sem pasta: conferir", "text_cut": "texto cortado: conferir"},
+        decimal=",",
+        date="%d/%m/%Y",
+        locale="pt_BR",
     ),
 }
 

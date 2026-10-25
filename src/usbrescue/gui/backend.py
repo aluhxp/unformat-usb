@@ -107,6 +107,14 @@ class Backend(QObject):
     def language(self):
         return self._lang
 
+    @Property("QVariantList", constant=True)
+    def languages(self):
+        return [{"code": c, "name": texts.LANGUAGE_NAMES[c]} for c in texts.LANGUAGES]
+
+    @Property(str, notify=languageChanged)
+    def languageName(self):
+        return texts.LANGUAGE_NAMES[self._lang]
+
     @Property(str, notify=languageChanged)
     def locale(self):
         return self._t["locale"]

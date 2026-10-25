@@ -52,13 +52,52 @@ ApplicationWindow {
                 }
             }
             Btn {
-                // shows the other language, in its own words
-                label: backend.language === "en" ? "Español" : "English"
+                id: langBtn
+                objectName: "languageButton"
+                label: backend.languageName + "  ▾"
                 primary: false
                 implicitHeight: 34
                 anchors.verticalCenter: parent.verticalCenter
-                Accessible.name: backend.language === "en" ? "Cambiar a español" : "Switch to English"
-                onClicked: backend.setLanguage(backend.language === "en" ? "es" : "en")
+                Accessible.name: "Language · Idioma"
+                onClicked: langMenu.open()
+
+                Popup {
+                    id: langMenu
+                    y: langBtn.height + 6
+                    x: langBtn.width - width
+                    padding: 6
+                    background: Rectangle {
+                        color: Theme.card; radius: 14
+                        border.color: Theme.line; border.width: 1
+                    }
+                    contentItem: Column {
+                        Repeater {
+                            model: backend.languages
+                            Rectangle {
+                                required property var modelData
+                                width: 168; height: 38; radius: 10
+                                color: pick.containsMouse ? Theme.rowHover : "transparent"
+                                Accessible.role: Accessible.MenuItem
+                                Accessible.name: modelData.name
+                                Txt {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    x: 14
+                                    text: modelData.name
+                                    font.pixelSize: 15
+                                    font.weight: modelData.code === backend.language ? Font.ExtraBold : Font.Normal
+                                    color: modelData.code === backend.language ? Theme.accent : Theme.ink
+                                }
+                                MouseArea {
+                                    id: pick
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: { langMenu.close(); backend.setLanguage(parent.modelData.code) }
+                                }
+                            }
+                        }
+                    }
+                }
             }
             Btn {
                 label: Theme.dark ? qsTr("Light") : qsTr("Dark")
