@@ -23,6 +23,7 @@ jobs:
           pyinstaller --noconfirm --onefile --windowed --uac-admin
           --name Rescatin
           --add-data "src/usbrescue/gui/qml;usbrescue/gui/qml"
+          --add-data "src/usbrescue/gui/i18n;usbrescue/gui/i18n"
           packaging/rescatin_main.py
       - uses: actions/upload-artifact@v4
         with:

@@ -19,11 +19,11 @@ ApplicationWindow {
     readonly property int step: ["pick", "error"].indexOf(st.phase) >= 0 ? 1
         : ["recovering", "done", "naming"].indexOf(st.phase) >= 0 ? 3 : 2
 
-    function num(n) { return Number(n).toLocaleString(Qt.locale("es_ES"), "f", 0) }
+    function num(n) { return Number(n).toLocaleString(Qt.locale(backend.locale), "f", 0) }
     function eta(seconds) {
-        if (seconds < 0) return qsTr("calculando el tiempo…")
-        if (seconds < 60) return qsTr("falta menos de un minuto")
-        return qsTr("faltan unos %1 min").arg(Math.round(seconds / 60))
+        if (seconds < 0) return qsTr("working out the time…")
+        if (seconds < 60) return qsTr("less than a minute left")
+        return qsTr("about %1 min left").arg(Math.round(seconds / 60))
     }
 
     header: Item {
@@ -41,7 +41,7 @@ ApplicationWindow {
             anchors.verticalCenter: parent.verticalCenter
             spacing: 18
             Repeater {
-                model: [qsTr("1 Elegir"), qsTr("2 Revisar"), qsTr("3 Recuperar")]
+                model: [qsTr("1 Choose"), qsTr("2 Review"), qsTr("3 Recover")]
                 Txt {
                     required property string modelData
                     required property int index
@@ -52,7 +52,16 @@ ApplicationWindow {
                 }
             }
             Btn {
-                label: Theme.dark ? qsTr("Claro") : qsTr("Oscuro")
+                // shows the other language, in its own words
+                label: backend.language === "en" ? "Español" : "English"
+                primary: false
+                implicitHeight: 34
+                anchors.verticalCenter: parent.verticalCenter
+                Accessible.name: backend.language === "en" ? "Cambiar a español" : "Switch to English"
+                onClicked: backend.setLanguage(backend.language === "en" ? "es" : "en")
+            }
+            Btn {
+                label: Theme.dark ? qsTr("Light") : qsTr("Dark")
                 primary: false
                 implicitHeight: 34
                 anchors.verticalCenter: parent.verticalCenter

@@ -57,7 +57,7 @@ def main():
     img.windows_quick_format()
     img.close()
 
-    engine, backend = build_window(app)
+    engine, backend = build_window(app, language="es" if "--es" in sys.argv else "en")
     backend._default_dest = os.path.join(work, "Recuperado")
     window = engine.rootObjects()[0]
     window.setProperty("forceDark", "--dark" in sys.argv)

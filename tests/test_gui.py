@@ -57,8 +57,8 @@ def names(backend):
 def test_scan_fills_the_tree_and_the_counters(scanned):
     s = scanned.state
     assert (s["foundFolders"], s["foundFiles"], s["orphanCount"]) == (17, 30, 3)
-    assert names(scanned) == ["Carpeta sin nombre 6", "Carpeta sin nombre 7", "iconos",
-                              "Carpeta sin nombre 9"]
+    assert names(scanned) == ["Unnamed folder 6", "Unnamed folder 7", "iconos",
+                              "Unnamed folder 9"]
     assert [n.lost_name for n in scanned.tree.rows] == [True, True, False, True]
 
 
@@ -79,9 +79,9 @@ def test_recovering_everything_writes_the_files_and_the_report(app, scanned, tmp
     scanned.recover(str(out))
     wait_for(app, scanned, "done")
     assert scanned.state["sumOk"] == 30
-    got = {k: v for k, v in files_under(out).items() if k != "_informe_recuperacion.csv"}
+    got = {k: v for k, v in files_under(out).items() if k != "_recovery_report.csv"}
     folders = {"/".join(k.split("/")[1:]): v for k, v in got.items()
-               if "/" in k and not k.startswith("Archivos sin carpeta/")}
+               if "/" in k and not k.startswith("Files without a folder/")}
     assert folders == expected_in_folders()
     assert os.path.exists(scanned.state["reportPath"])
 
@@ -93,7 +93,7 @@ def test_unticking_a_folder_leaves_it_out(app, scanned, tmp_path):
     out = tmp_path / "out"
     scanned.recover(str(out))
     wait_for(app, scanned, "done")
-    got = [k for k in files_under(out) if k != "_informe_recuperacion.csv"]
+    got = [k for k in files_under(out) if k != "_recovery_report.csv"]
     assert len(got) == 6 and not any("viaje_" in k for k in got)
 
 
@@ -143,7 +143,7 @@ def test_unticking_one_file_leaves_only_that_file_out(app, scanned, tmp_path):
     scanned.setWithOrphans(False)
     scanned.recover(str(tmp_path / "out"))
     wait_for(app, scanned, "done")
-    got = [k for k in files_under(tmp_path / "out") if k != "_informe_recuperacion.csv"]
+    got = [k for k in files_under(tmp_path / "out") if k != "_recovery_report.csv"]
     assert len(got) == 29 and not any(k.endswith("viaje_03/foto_3.jpg") for k in got)
 
 
@@ -182,7 +182,7 @@ def test_rescuing_during_the_scan_then_finishing_copies_nothing_twice(app, tmp_p
     backend.setWithOrphans(False)
     backend.recover(str(out))
     wait_for(app, backend, "done")
-    got = [k for k in files_under(out) if k != "_informe_recuperacion.csv"]
+    got = [k for k in files_under(out) if k != "_recovery_report.csv"]
     assert len(got) == 30 and not any(" (1)" in k for k in got)
     assert backend.state["sumOk"] == 30
     backend.back()
@@ -202,9 +202,9 @@ def test_names_are_proposed_applied_and_undone(app, scanned, tmp_path):
         time.sleep(0.01)
     rows = scanned.state["names"]
     assert [(r["current"], r["name"]) for r in rows] == [
-        ("Carpeta sin nombre 6", "Fotos 2021"),         # photos, each with a short note
-        ("Carpeta sin nombre 7", "Documentos 2021"),
-        ("Carpeta sin nombre 9", "Varios 2021")]        # .bin files say nothing
+        ("Unnamed folder 6", "Photos 2021"),         # photos, each with a short note
+        ("Unnamed folder 7", "Documents 2021"),
+        ("Unnamed folder 9", "Various 2021")]        # .bin files say nothing
     assert len(rows) == unnamed
     before = sorted(os.listdir(out))
 
@@ -214,10 +214,33 @@ def test_names_are_proposed_applied_and_undone(app, scanned, tmp_path):
     scanned.setNameChecked(2, False)
     scanned.applyNames(["Mi carpeta", "ignorada", "ignorada"])
     assert scanned.state["phase"] == "done" and scanned.state["renamed"] == 1
-    assert "Mi carpeta" in os.listdir(out) and "Carpeta sin nombre 7" in os.listdir(out)
-    assert "Mi carpeta" + os.sep in (out / "_informe_recuperacion.csv").read_text()
+    assert "Mi carpeta" in os.listdir(out) and "Unnamed folder 7" in os.listdir(out)
+    assert "Mi carpeta" + os.sep in (out / "_recovery_report.csv").read_text()
     scanned.undoNames()
     assert sorted(os.listdir(out)) == before and scanned.state["sumUnnamed"] == unnamed
+
+
+def test_in_spanish_folders_and_the_report_are_named_in_spanish(app, tmp_path):
+    path = tmp_path / "pendrive.img"
+    img = build(path)
+    img.windows_quick_format()
+    img.close()
+    backend = Backend()
+    assert backend.language == "en"                     # English unless chosen
+    backend.setLanguage("es")
+    backend.addImage(QUrl.fromLocalFile(str(path)))
+    backend.choose(0)
+    wait_for(app, backend, "diagnosed")
+    backend.scan()
+    wait_for(app, backend, "scanned")
+    assert "Carpeta sin nombre 6" in names(backend)
+    backend.setWithOrphans(False)
+    backend.recover(str(tmp_path / "out"))
+    wait_for(app, backend, "done")
+    report = (tmp_path / "out" / "_informe_recuperacion.csv").read_text(encoding="utf-8")
+    assert report.startswith("ruta,") and "Carpeta sin nombre 6" in report
+    assert backend.size(1536) == "1,5 KB"
+    backend.back()
 
 
 def formatted_image(tmp_path):
@@ -301,14 +324,16 @@ def test_every_screen_loads_without_a_qml_error(app):
     try:
         engine, backend = build_window(app)
         window = engine.rootObjects()[0]
-        for phase in ("pick", "diagnosing", "diagnosed", "imaging", "scanning", "scanned",
-                      "recovering", "done", "naming", "nothing", "error"):
+        for lang, phase in [(lang, phase) for lang in ("en", "es") for phase in ("pick", "diagnosing", "diagnosed", "imaging", "scanning", "scanned",
+                      "recovering", "done", "naming", "nothing", "error")]:
+            if backend.language != lang:
+                backend.setLanguage(lang)
             for device in (False, True):
                 backend._set(phase=phase, isDevice=device, verdict="structure", error="no_permission",
                              sumUnnamed=2, renamed=int(device), namesError="twice" if device else "",
-                             names=[dict(current="Carpeta sin nombre 5", name="Fotos 2023",
+                             names=[dict(current="Unnamed folder 5", name="Fotos 2023",
                                          source="content", example="", files=12, checked=True),
-                                    dict(current="Carpeta sin nombre 9", name="Trabajo",
+                                    dict(current="Unnamed folder 9", name="Trabajo",
                                          source="original", example="E:/Trabajo/a.xlsx",
                                          files=3, checked=False)])
                 app.processEvents()

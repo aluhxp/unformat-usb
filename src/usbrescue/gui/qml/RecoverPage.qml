@@ -12,12 +12,12 @@ Item {
         Mascot { width: 72; mood: "working"; anchors.horizontalCenter: parent.horizontalCenter }
         Txt {
             width: parent.width; horizontalAlignment: Text.AlignHCenter
-            text: qsTr("Rescatando tus archivos…"); font.pixelSize: 32; font.weight: Font.ExtraBold
+            text: qsTr("Rescuing your files…"); font.pixelSize: 32; font.weight: Font.ExtraBold
         }
         Txt {
             width: parent.width; horizontalAlignment: Text.AlignHCenter; color: Theme.soft; font.pixelSize: 17
-            text: (page.st.early ? qsTr("Vamos por %1 de %2. Al terminar seguimos buscando el resto.")
-                                 : qsTr("Vamos por %1 de %2. Puedes seguir usando la computadora."))
+            text: (page.st.early ? qsTr("%1 of %2 so far. When this is done we keep searching for the rest.")
+                                 : qsTr("%1 of %2 so far. You can keep using your computer."))
                 .arg(win.num(page.st.recDone)).arg(win.num(page.st.recTotal))
         }
         Bar { width: parent.width; height: 22; value: page.st.recProgress }
@@ -34,8 +34,8 @@ Item {
             Column {
                 anchors.fill: parent; anchors.margins: 16; anchors.leftMargin: 20; anchors.rightMargin: 20
                 spacing: 10
-                Txt { width: parent.width; font.pixelSize: 15; elide: Text.ElideMiddle; wrapMode: Text.NoWrap; text: qsTr("Ahora: %1").arg(page.st.recCurrent) }
-                Txt { width: parent.width; font.pixelSize: 15; elide: Text.ElideMiddle; wrapMode: Text.NoWrap; text: qsTr("Se guarda en: %1").arg(page.st.destPath) }
+                Txt { width: parent.width; font.pixelSize: 15; elide: Text.ElideMiddle; wrapMode: Text.NoWrap; text: qsTr("Now: %1").arg(page.st.recCurrent) }
+                Txt { width: parent.width; font.pixelSize: 15; elide: Text.ElideMiddle; wrapMode: Text.NoWrap; text: qsTr("Saved in: %1").arg(page.st.destPath) }
             }
         }
         Rectangle {
@@ -43,7 +43,7 @@ Item {
             Txt {
                 anchors.verticalCenter: parent.verticalCenter; x: 16
                 color: Theme.warnInk; font.pixelSize: 15; font.weight: Font.Bold
-                text: qsTr("No desconectes el pendrive hasta que terminemos.")
+                text: qsTr("Don't unplug the drive until we are done.")
             }
         }
     }

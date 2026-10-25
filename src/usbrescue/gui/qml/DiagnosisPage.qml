@@ -8,18 +8,18 @@ Item {
     readonly property bool healthy: st.verdict === "in_use"
 
     readonly property var headline: ({
-        in_use: qsTr("Este pendrive parece estar bien."),
-        names_and_structure: qsTr("Muy buenas noticias: tus carpetas siguen ahí, con sus nombres."),
-        structure: qsTr("Buenas noticias: tus carpetas siguen ahí."),
-        scan_needed: qsTr("Vamos a buscar a fondo."),
-        looks_empty: qsTr("Este pendrive parece vacío.")
+        in_use: qsTr("This drive looks fine."),
+        names_and_structure: qsTr("Great news: your folders are still there, with their names."),
+        structure: qsTr("Good news: your folders are still there."),
+        scan_needed: qsTr("Let's search it thoroughly."),
+        looks_empty: qsTr("This drive looks empty.")
     })
     readonly property var detail: ({
-        in_use: qsTr("Sus archivos están a la vista y no vemos señales de un formateo reciente: puedes abrirlos con normalidad, no hace falta rescatarlos."),
-        names_and_structure: qsTr("Revisamos el pendrive en un momento. Esto es lo que dejó el formateo:"),
-        structure: qsTr("Revisamos el pendrive en un momento. Esto es lo que dejó el formateo:"),
-        scan_needed: qsTr("El formateo borró el índice, pero los archivos pueden seguir ahí. Solo la búsqueda completa lo dirá."),
-        looks_empty: qsTr("Todo lo que miramos está en blanco: o no tenía datos, o se borraron al formatear. La búsqueda completa lo confirma.")
+        in_use: qsTr("Its files are in plain sight and we see no sign of a recent format: you can open them as usual, there is nothing to rescue."),
+        names_and_structure: qsTr("We took a quick look at the drive. This is what the format left behind:"),
+        structure: qsTr("We took a quick look at the drive. This is what the format left behind:"),
+        scan_needed: qsTr("The format erased the index, but the files may still be there. Only a full search will tell."),
+        looks_empty: qsTr("Everything we looked at is blank: either it held no data, or the format erased it. A full search will confirm it.")
     })
 
     Column {
@@ -37,15 +37,15 @@ Item {
                 spacing: 6
                 Txt {
                     width: parent.width
-                    text: page.busy ? qsTr("Revisando %1…").arg(page.st.sourceName) : (page.headline[page.st.verdict] || "")
+                    text: page.busy ? qsTr("Checking %1…").arg(page.st.sourceName) : (page.headline[page.st.verdict] || "")
                     font.pixelSize: 30; font.weight: Font.ExtraBold
                 }
                 Txt {
                     width: parent.width; color: Theme.soft
                     text: !page.busy ? (page.detail[page.st.verdict] || "")
                         : page.st.needsPermission
-                        ? qsTr("El sistema te pedirá la contraseña para poder leer el pendrive. Solo lo leemos: no se escribe nada en él.")
-                        : qsTr("Son solo unos segundos.")
+                        ? qsTr("Your system will ask for your password so the drive can be read. We only read it: nothing is written to it.")
+                        : qsTr("It only takes a few seconds.")
                 }
             }
         }
@@ -61,7 +61,7 @@ Item {
                 spacing: 8
                 Txt {
                     width: parent.width; font.weight: Font.Bold
-                    text: qsTr("Lo que tiene ahora: %1 carpetas y %2 archivos sueltos").arg(win.num(page.st.currentFolderCount)).arg(win.num(page.st.currentFiles))
+                    text: qsTr("What it holds now: %1 folders and %2 loose files").arg(win.num(page.st.currentFolderCount)).arg(win.num(page.st.currentFiles))
                 }
                 Txt {
                     visible: page.st.currentFolders.length > 0
@@ -71,7 +71,7 @@ Item {
                 }
                 Txt {
                     width: parent.width; color: Theme.soft; font.pixelSize: 15
-                    text: qsTr("¿Buscas algo que borraste, o lo que había antes de un formateo? Entonces sí podemos buscar: lo que ya no está a la vista a veces sigue en el pendrive.")
+                    text: qsTr("Looking for something you deleted, or for what was there before a format? Then a search is worth it: what is no longer in sight is sometimes still on the drive.")
                 }
             }
         }
@@ -86,12 +86,12 @@ Item {
                 anchors.margins: 6; anchors.leftMargin: 20; anchors.rightMargin: 20
                 Repeater {
                     model: [
-                        { what: qsTr("Las carpetas y lo que tenían dentro"),
-                          ok: page.good, text: page.good ? qsTr("Se pueden reconstruir") : qsTr("Lo sabremos al buscar") },
-                        { what: qsTr("Los archivos grandes guardados en trozos"),
-                          ok: page.st.diagFat, text: page.st.diagFat ? qsTr("Se pueden rearmar") : qsTr("Algunos podrían salir dañados") },
-                        { what: qsTr("Los nombres de las carpetas principales"),
-                          ok: page.st.diagRoot, text: page.st.diagRoot ? qsTr("Se conservan") : qsTr("Probablemente se perdieron") }
+                        { what: qsTr("The folders and what was inside them"),
+                          ok: page.good, text: page.good ? qsTr("Can be rebuilt") : qsTr("We'll know after searching") },
+                        { what: qsTr("Large files stored in pieces"),
+                          ok: page.st.diagFat, text: page.st.diagFat ? qsTr("Can be put back together") : qsTr("Some may come out damaged") },
+                        { what: qsTr("The names of the main folders"),
+                          ok: page.st.diagRoot, text: page.st.diagRoot ? qsTr("Kept") : qsTr("Probably lost") }
                     ]
                     Item {
                         required property var modelData
@@ -123,19 +123,19 @@ Item {
         anchors.bottom: parent.bottom; anchors.bottomMargin: 106
         anchors.leftMargin: 72; anchors.rightMargin: 72
         spacing: 8
-        Txt { text: qsTr("¿Cómo quieres hacerlo?"); font.weight: Font.ExtraBold }
+        Txt { text: qsTr("How would you like to do it?"); font.weight: Font.ExtraBold }
         Row {
             width: parent.width; spacing: 14
             Repeater {
                 model: [
-                    { mode: "safe", title: qsTr("Modo seguro"),
+                    { mode: "safe", title: qsTr("Safe mode"),
                       text: !page.st.safeFits
-                        ? qsTr("No hay espacio: la copia necesita %1 y tienes %2 libres.").arg(backend.size(page.st.driveSize)).arg(backend.size(page.st.freeSpace))
+                        ? qsTr("Not enough space: the copy needs %1 and you have %2 free.").arg(backend.size(page.st.driveSize)).arg(backend.size(page.st.freeSpace))
                         : page.st.safeRoomy
-                        ? qsTr("Primero copiamos el pendrive entero a tu computadora y trabajamos sobre la copia. Necesita %1; tienes %2 libres.").arg(backend.size(page.st.driveSize)).arg(backend.size(page.st.freeSpace))
-                        : qsTr("La copia cabe (%1 de %2 libres), pero puede que después no quede sitio para todo lo rescatado.").arg(backend.size(page.st.driveSize)).arg(backend.size(page.st.freeSpace)) },
-                    { mode: "direct", title: qsTr("Modo directo"),
-                      text: qsTr("Leemos directamente del pendrive. Empieza antes, pero si el pendrive está fallando es más arriesgado.") }
+                        ? qsTr("First we copy the whole drive to your computer and work on the copy. Needs %1; %2 free.").arg(backend.size(page.st.driveSize)).arg(backend.size(page.st.freeSpace))
+                        : qsTr("The copy fits (%1 of %2 free), but there may be no room left afterwards for everything rescued.").arg(backend.size(page.st.driveSize)).arg(backend.size(page.st.freeSpace)) },
+                    { mode: "direct", title: qsTr("Direct mode"),
+                      text: qsTr("We read straight from the drive. It starts sooner, but it is riskier if the drive is failing.") }
                 ]
                 Card {
                     id: option
@@ -171,7 +171,7 @@ Item {
                         anchors.left: optionTitle.right; anchors.leftMargin: 10
                         anchors.verticalCenter: optionTitle.verticalCenter
                         color: Theme.sun; radius: 10; height: 20; width: rec.implicitWidth + 16
-                        Txt { id: rec; anchors.centerIn: parent; text: qsTr("Recomendado"); color: Theme.sunInk; font.pixelSize: 12; font.weight: Font.ExtraBold }
+                        Txt { id: rec; anchors.centerIn: parent; text: qsTr("Recommended"); color: Theme.sunInk; font.pixelSize: 12; font.weight: Font.ExtraBold }
                     }
                     Txt {
                         anchors.left: radio.right; anchors.leftMargin: 12
@@ -190,15 +190,15 @@ Item {
         visible: !page.busy
         anchors.left: parent.left; anchors.bottom: parent.bottom
         anchors.margins: 32; anchors.leftMargin: 72
-        Btn { label: qsTr("Elegir otro"); primary: false; onClicked: backend.back() }
+        Btn { label: qsTr("Choose another"); primary: false; onClicked: backend.back() }
     }
     Btn {
         visible: !page.busy
         anchors.right: parent.right; anchors.bottom: parent.bottom
         anchors.margins: 32; anchors.rightMargin: 72
         primary: !page.healthy
-        label: page.healthy ? qsTr("Buscar de todos modos")
-            : page.st.mode === "safe" ? qsTr("Hacer la copia y buscar") : qsTr("Empezar a buscar")
+        label: page.healthy ? qsTr("Search anyway")
+            : page.st.mode === "safe" ? qsTr("Make the copy and search") : qsTr("Start searching")
         onClicked: backend.start()
     }
 }

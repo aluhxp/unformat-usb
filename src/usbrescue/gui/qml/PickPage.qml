@@ -9,9 +9,9 @@ Item {
         anchors.leftMargin: 72; anchors.rightMargin: 72
         spacing: 18
 
-        Txt { text: qsTr("Tranquilo, vamos a buscar tus archivos."); font.pixelSize: 32; font.weight: Font.ExtraBold; width: parent.width }
+        Txt { text: qsTr("Don't worry, let's find your files."); font.pixelSize: 32; font.weight: Font.ExtraBold; width: parent.width }
         Txt {
-            text: qsTr("Elige el pendrive o la tarjeta. Solo lo vamos a leer: no se escribe nada en él.")
+            text: qsTr("Choose the drive or card. We will only read it: nothing is written to it.")
             color: Theme.soft; font.pixelSize: 17; width: parent.width
         }
 
@@ -48,8 +48,8 @@ Item {
                         Txt {
                             color: Theme.soft; font.pixelSize: 15
                             text: row.modelData.size + " · "
-                                + (row.modelData.transport === "image" ? qsTr("copia de disco") : row.modelData.transport.toUpperCase())
-                                + (row.modelData.fs ? " · " + qsTr("formato actual: %1").arg(row.modelData.fs) : "")
+                                + (row.modelData.transport === "image" ? qsTr("disk image") : row.modelData.transport.toUpperCase())
+                                + (row.modelData.fs ? " · " + qsTr("current format: %1").arg(row.modelData.fs) : "")
                         }
                     }
                 }
@@ -58,7 +58,7 @@ Item {
                     anchors.right: parent.right; anchors.rightMargin: 20
                     anchors.verticalCenter: parent.verticalCenter
                     color: Theme.warnBg; radius: 11; height: 24; width: tag.implicitWidth + 18
-                    Txt { id: tag; anchors.centerIn: parent; text: qsTr("Te pedirá la contraseña"); color: Theme.warnInk; font.pixelSize: 13; font.weight: Font.ExtraBold }
+                    Txt { id: tag; anchors.centerIn: parent; text: qsTr("Will ask for your password"); color: Theme.warnInk; font.pixelSize: 13; font.weight: Font.ExtraBold }
                 }
             }
         }
@@ -67,13 +67,13 @@ Item {
             visible: backend.devices.length === 0
             width: parent.width
             color: Theme.soft
-            text: qsTr("No vemos ningún pendrive conectado. Conéctalo y pulsa Actualizar.")
+            text: qsTr("We don't see any drive plugged in. Plug it in and press Refresh.")
         }
 
         Row {
             spacing: 12
-            Btn { label: qsTr("Actualizar"); primary: false; implicitHeight: 44; onClicked: backend.refreshDevices() }
-            Btn { label: qsTr("Abrir una copia de disco…"); primary: false; implicitHeight: 44; onClicked: imageDialog.open() }
+            Btn { label: qsTr("Refresh"); primary: false; implicitHeight: 44; onClicked: backend.refreshDevices() }
+            Btn { label: qsTr("Open a disk image…"); primary: false; implicitHeight: 44; onClicked: imageDialog.open() }
         }
     }
 
@@ -81,13 +81,13 @@ Item {
         anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
         anchors.margins: 36; anchors.leftMargin: 72; anchors.rightMargin: 72
         color: Theme.soft; font.pixelSize: 15
-        text: qsTr("El disco de tu computadora no aparece aquí, para que no haya accidentes. Mientras tanto, no guardes nada nuevo en el pendrive: cada archivo nuevo puede tapar uno viejo.")
+        text: qsTr("Your computer's own disk is not listed, to avoid accidents. Meanwhile, don't save anything new on the drive: every new file can cover an old one.")
     }
 
     FileDialog {
         id: imageDialog
-        title: qsTr("Elige la copia de disco")
-        nameFilters: [qsTr("Copias de disco (*.img *.dd *.bin *.raw)"), qsTr("Todos los archivos (*)")]
+        title: qsTr("Choose the disk image")
+        nameFilters: [qsTr("Disk images (*.img *.dd *.bin *.raw)"), qsTr("All files (*)")]
         onAccepted: backend.addImage(selectedFile)
     }
 }

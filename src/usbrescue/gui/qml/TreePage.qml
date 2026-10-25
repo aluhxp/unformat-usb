@@ -20,27 +20,27 @@ Item {
                 width: parent.width - 290
                 font.pixelSize: 23; font.weight: Font.ExtraBold
                 text: page.st.foundFolders === 0
-                    ? qsTr("Buscando tus carpetas…")
+                    ? qsTr("Looking for your folders…")
                     : page.scanning && page.st.rescuedEarly > 0
-                    ? qsTr("Ya rescatamos %1 archivos; seguimos buscando").arg(win.num(page.st.rescuedEarly))
-                    : (page.scanning ? qsTr("Ya encontramos %1 archivos en %2 carpetas") : qsTr("Encontramos %1 archivos en %2 carpetas"))
+                    ? qsTr("%1 files rescued already; still searching").arg(win.num(page.st.rescuedEarly))
+                    : (page.scanning ? qsTr("%1 files in %2 folders found so far") : qsTr("We found %1 files in %2 folders"))
                         .arg(win.num(page.st.foundFiles)).arg(win.num(page.st.foundFolders))
             }
             Txt {
                 anchors.right: parent.right; anchors.baseline: title.baseline
                 color: Theme.soft; font.pixelSize: 15
                 text: page.scanning && page.st.scanProgress >= 1
-                    ? qsTr("Ordenando lo encontrado…")
+                    ? qsTr("Sorting out what we found…")
                     : page.scanning
-                    ? qsTr("Buscando: %1 % · %2").arg(Math.floor(page.st.scanProgress * 100)).arg(win.eta(page.st.scanEta))
-                    : qsTr("Búsqueda terminada · %1").arg(backend.size(page.st.foundBytes))
+                    ? qsTr("Searching: %1 % · %2").arg(Math.floor(page.st.scanProgress * 100)).arg(win.eta(page.st.scanEta))
+                    : qsTr("Search finished · %1").arg(backend.size(page.st.foundBytes))
             }
         }
         Bar { width: parent.width; value: page.st.scanProgress }
         Txt {
             visible: page.st.imageMade
             width: parent.width; color: Theme.accent; font.pixelSize: 14; font.weight: Font.Bold
-            text: qsTr("La copia está hecha: ya puedes desconectar el pendrive. Ahora trabajamos sobre la copia.")
+            text: qsTr("The copy is done: you can unplug the drive now. We are working on the copy.")
         }
     }
 
@@ -55,7 +55,7 @@ Item {
             visible: list.count === 0
             anchors.centerIn: parent
             color: Theme.soft
-            text: qsTr("Las carpetas irán apareciendo aquí.")
+            text: qsTr("Folders will show up here.")
         }
 
         ListView {
@@ -94,7 +94,7 @@ Item {
                     visible: row.isGroup
                     anchors.verticalCenter: parent.verticalCenter; x: 8
                     color: Theme.soft; font.pixelSize: 14; font.weight: Font.ExtraBold
-                    text: qsTr("Ubicando: carpetas que todavía no sabemos dónde van")
+                    text: qsTr("Placing: folders whose place we don't know yet")
                 }
                 Row {
                     visible: !row.isGroup
@@ -129,13 +129,13 @@ Item {
                         visible: row.rescued
                         anchors.verticalCenter: parent.verticalCenter
                         color: Theme.rowHover; radius: 11; height: 22; width: done.implicitWidth + 16
-                        Txt { id: done; anchors.centerIn: parent; text: qsTr("Ya rescatada"); color: Theme.accent; font.pixelSize: 13; font.weight: Font.ExtraBold }
+                        Txt { id: done; anchors.centerIn: parent; text: qsTr("Rescued"); color: Theme.accent; font.pixelSize: 13; font.weight: Font.ExtraBold }
                     }
                     Rectangle {
                         visible: row.lostName
                         anchors.verticalCenter: parent.verticalCenter
                         color: Theme.warnBg; radius: 11; height: 22; width: lost.implicitWidth + 16
-                        Txt { id: lost; anchors.centerIn: parent; text: qsTr("Nombre perdido"); color: Theme.warnInk; font.pixelSize: 13; font.weight: Font.ExtraBold }
+                        Txt { id: lost; anchors.centerIn: parent; text: qsTr("Name lost"); color: Theme.warnInk; font.pixelSize: 13; font.weight: Font.ExtraBold }
                     }
                 }
                 Txt {
@@ -143,7 +143,7 @@ Item {
                     anchors.right: parent.right; anchors.rightMargin: 12
                     anchors.verticalCenter: parent.verticalCenter
                     color: Theme.soft; font.pixelSize: 14
-                    text: row.totalFiles === 1 ? qsTr("1 archivo") : qsTr("%1 archivos").arg(win.num(row.totalFiles))
+                    text: row.totalFiles === 1 ? qsTr("1 file") : qsTr("%1 files").arg(win.num(row.totalFiles))
                 }
             }
         }
@@ -161,7 +161,7 @@ Item {
             width: parent.width - 48
             horizontalAlignment: Text.AlignHCenter
             color: Theme.soft
-            text: qsTr("Toca una carpeta para ver lo que tiene dentro.")
+            text: qsTr("Pick a folder to see what is inside.")
         }
 
         Column {
@@ -202,8 +202,8 @@ Item {
                     width: parent.width - 24; horizontalAlignment: Text.AlignHCenter
                     color: Theme.soft; font.pixelSize: 14
                     text: page.st.preview.kind === "image"
-                        ? (picture.status === Image.Error ? qsTr("Esta imagen no se puede mostrar: puede estar dañada.") : qsTr("Cargando la imagen…"))
-                        : qsTr("Este tipo de archivo todavía no tiene vista previa.")
+                        ? (picture.status === Image.Error ? qsTr("This picture cannot be shown: it may be damaged.") : qsTr("Loading the picture…"))
+                        : qsTr("No preview for this kind of file yet.")
                 }
             }
             Txt {
@@ -220,7 +220,7 @@ Item {
             Txt {
                 visible: page.st.files.length === 0
                 width: parent.width; color: Theme.soft; font.pixelSize: 14
-                text: qsTr("Esta carpeta no tiene archivos sueltos: mira dentro de sus subcarpetas.")
+                text: qsTr("This folder has no files of its own: look inside its subfolders.")
             }
             ListView {
                 id: fileList
@@ -233,7 +233,7 @@ Item {
                     visible: page.st.filesHidden > 0
                     height: visible ? implicitHeight + 12 : 0
                     color: Theme.soft; font.pixelSize: 13
-                    text: qsTr("…y %1 archivos más en esta carpeta").arg(win.num(page.st.filesHidden))
+                    text: qsTr("…and %1 more files in this folder").arg(win.num(page.st.filesHidden))
                 }
                 delegate: Rectangle {
                     id: fileRow
@@ -285,12 +285,12 @@ Item {
                 spacing: 10
                 Check {
                     checked: page.st.mediaOnly
-                    name: qsTr("Solo fotos y videos")
+                    name: qsTr("Only photos and videos")
                     onToggled: (value) => backend.setMediaOnly(value)
                 }
                 Txt {
                     font.pixelSize: 15
-                    text: qsTr("Solo fotos y videos, cada uno en su carpeta")
+                    text: qsTr("Only photos and videos, each in its folder")
                 }
             }
             Row {
@@ -298,17 +298,17 @@ Item {
                 spacing: 10
                 Check {
                     checked: page.st.withOrphans
-                    name: qsTr("Incluir archivos sin carpeta")
+                    name: qsTr("Include files without a folder")
                     onToggled: (value) => backend.setWithOrphans(value)
                 }
                 Txt {
                     font.pixelSize: 15
                     readonly property int n: page.st.mediaOnly ? page.st.mediaOrphans : page.st.orphanCount
                     text: page.st.mediaOnly
-                        ? qsTr("Incluir %1 fotos y videos sin carpeta").arg(win.num(n))
+                        ? qsTr("Include %1 photos and videos without a folder").arg(win.num(n))
                         : n === 1
-                        ? qsTr("Incluir 1 archivo sin carpeta (estaba suelto, fuera de las carpetas)")
-                        : qsTr("Incluir %1 archivos sin carpeta (los que estaban sueltos, fuera de las carpetas)").arg(win.num(n))
+                        ? qsTr("Include 1 file without a folder (it was loose, outside the folders)")
+                        : qsTr("Include %1 files without a folder (the loose ones, outside the folders)").arg(win.num(n))
                 }
             }
             Row {
@@ -317,10 +317,10 @@ Item {
                     color: Theme.soft; font.pixelSize: 15
                     width: Math.min(implicitWidth, bottom.width - go.width - 150)
                     elide: Text.ElideMiddle; wrapMode: Text.NoWrap
-                    text: qsTr("Se guardará en: %1").arg(page.destination)
+                    text: qsTr("Will be saved in: %1").arg(page.destination)
                 }
                 Txt {
-                    text: qsTr("Cambiar…"); color: Theme.accent; font.pixelSize: 15; font.weight: Font.Bold
+                    text: qsTr("Change…"); color: Theme.accent; font.pixelSize: 15; font.weight: Font.Bold
                     TapHandler { onTapped: folderDialog.open() }
                     HoverHandler { cursorShape: Qt.PointingHandCursor }
                 }
@@ -331,14 +331,14 @@ Item {
             anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
             enabledLook: page.scanning ? page.st.canRescueNow
                 : page.st.selectedFiles + (page.st.withOrphans ? (page.st.mediaOnly ? page.st.mediaOrphans : page.st.orphanCount) : 0) > 0
-            label: (page.scanning ? qsTr("Rescatar ya lo marcado (%1)") : qsTr("Rescatar lo marcado (%1)")).arg(backend.size(page.st.selectedBytes))
+            label: (page.scanning ? qsTr("Rescue the ticked ones now (%1)") : qsTr("Rescue the ticked ones (%1)")).arg(backend.size(page.st.selectedBytes))
             onClicked: backend.recover(page.destination)
         }
     }
 
     FolderDialog {
         id: folderDialog
-        title: qsTr("¿Dónde guardamos lo rescatado?")
+        title: qsTr("Where should we save what we rescue?")
         onAccepted: page.destination = decodeURIComponent(selectedFolder.toString().replace(/^file:\/\//, ""))
     }
 }

@@ -14,7 +14,6 @@ from PySide6.QtCore import Property, QObject, QTimer, QUrl, Signal, Slot
 from PySide6.QtGui import QDesktopServices
 
 from .. import brand
-from ..cli.main import KIND_WORDS, METHODS, ORPHAN_STATUS, WARNINGS
 from ..core import imaging, naming
 from ..core import model as ev
 from ..core.diagnose import diagnose
@@ -25,24 +24,8 @@ from ..core.session import Session, UnsafeDestination, file_key
 from ..core.util import fmt_size as _fmt_size
 from ..core.util import sanitize
 from ..devices import Device, list_removable
+from . import texts
 from .tree_model import FolderTreeModel
-
-def fmt_size(n):
-    return _fmt_size(n).replace(".", ",")     # decimal comma, as in Spanish
-
-
-NAMES = ev.Names(unnamed_folder="Carpeta sin nombre {}", lost_parent="Carpetas sueltas",
-                 orphan_dir="Archivos sin carpeta", orphan_file="archivo_{}",
-                 photo_label="foto {}", link_label="enlace {}", text_pieces="Trozos de texto")
-
-
-REPORT = "_informe_recuperacion.csv"
-NAMES_LOG = "_cambios_de_nombre.json"
-
-
-def label_name(kind, years, theme):
-    return naming.compose(KIND_WORDS[kind], years, theme)
-
 
 IMAGE_TYPES = ("jpg", "jpeg", "png", "gif", "bmp", "webp")
 FILES_SHOWN = 500               # a folder may hold tens of thousands
@@ -53,9 +36,13 @@ PREVIEW_TEXT_LIMIT = 4000
 class Backend(QObject):
     changed = Signal()
     devicesChanged = Signal()
+    languageChanged = Signal()
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, language=texts.DEFAULT):
         super().__init__(parent)
+        self._lang = language if language in texts.LANGUAGES else texts.DEFAULT
+        self._t = texts.texts(self._lang)
+        self._on_language = None        # set by the app: installs the translation
         self._tree = FolderTreeModel(self)
         self._devices = []
         self._events = queue.Queue()
@@ -101,6 +88,41 @@ class Backend(QObject):
         self._s.update(values)
         self.changed.emit()
 
+    # -------------------------------------------------------------- language
+
+    def fmt_size(self, n):
+        return _fmt_size(n).replace(".", self._t["decimal"])
+
+    def _date(self, when):
+        return when.strftime(self._t["date"]) if when else ""
+
+    def _label(self, kind, years, theme):
+        return naming.compose(self._t["kinds"][kind], years, theme)
+
+    @property
+    def names(self):
+        return self._t["names"]
+
+    @Property(str, notify=languageChanged)
+    def language(self):
+        return self._lang
+
+    @Property(str, notify=languageChanged)
+    def locale(self):
+        return self._t["locale"]
+
+    @Slot(str)
+    def setLanguage(self, lang):
+        """Applies to the screens at once, and to folder names from the next rescue on."""
+        if lang not in texts.LANGUAGES:
+            return
+        self._lang, self._t = lang, texts.texts(lang)
+        if self._on_language:
+            self._on_language(lang)
+        self.languageChanged.emit()
+        self.devicesChanged.emit()
+        self.changed.emit()
+
     # ------------------------------------------------------------ properties
 
     @Property("QVariantMap", notify=changed)
@@ -113,7 +135,7 @@ class Backend(QObject):
 
     @Property("QVariantList", notify=devicesChanged)
     def devices(self):
-        return [dict(path=d.path, name=d.name, size=fmt_size(d.size), transport=d.transport,
+        return [dict(path=d.path, name=d.name, size=self.fmt_size(d.size), transport=d.transport,
                      fs=d.fs, readable=d.readable) for d in self._devices]
 
     @Property(str, constant=True)
@@ -162,7 +184,7 @@ class Backend(QObject):
 
     @Slot(float, result=str)
     def size(self, n):
-        return fmt_size(int(n))
+        return self.fmt_size(int(n))
 
     # -------------------------------------------------------------- choosing
 
@@ -191,7 +213,7 @@ class Backend(QObject):
         self._reset_state()
         free, fits, roomy = imaging.space_check(d.size, self.defaultDestination)
         device = d.transport != "image"
-        self._set(phase="diagnosing", sourceName=d.name, sourceDetail=fmt_size(d.size),
+        self._set(phase="diagnosing", sourceName=d.name, sourceDetail=self.fmt_size(d.size),
                   needsPermission=not d.readable, isDevice=device, driveSize=d.size,
                   freeSpace=free, safeFits=fits, safeRoomy=roomy,
                   mode="safe" if device and roomy else "direct")
@@ -245,7 +267,7 @@ class Backend(QObject):
             # Windows and macOS: only an administrator may read a whole drive
             raise PermissionError(d.path)
         disk = None if d.readable else HelperSource(d.path)
-        self._session = Session(d.path, names=NAMES, disk=disk)
+        self._session = Session(d.path, names=self.names, disk=disk)
         self._events.put(("diagnosis", diagnose(self._session.disk)))
 
     @Slot(str)
@@ -272,7 +294,7 @@ class Backend(QObject):
         folder = self.defaultDestination
         os.makedirs(folder, exist_ok=True)
         name = os.path.splitext(d.name)[0] if d.transport == "image" else d.name
-        path = os.path.join(folder, f"Copia de {sanitize(name)}.img")
+        path = os.path.join(folder, self._t["copy"].format(sanitize(name)))
         self._events.put(("image_path", path))
         started, first = time.time(), None
         for e in imaging.make_image(self._session.disk, d.path, path):
@@ -284,7 +306,7 @@ class Backend(QObject):
                 self._events.put(("image", (e, time.time() - started, first)))
         # from here on the drive is no longer needed: everything reads the copy
         self._close()
-        self._session = Session(path, names=NAMES)
+        self._session = Session(path, names=self.names)
         self._events.put(("image_done", e.bad_bytes))
         self._scan_started = time.time()
         self._do_scan()
@@ -331,19 +353,21 @@ class Backend(QObject):
 
     def _copy(self, dest, kind, **options):
         os.makedirs(dest, exist_ok=True)
-        report = os.path.join(dest, REPORT)
+        t = self._t
+        report = os.path.join(dest, t["report"])
         new = not os.path.exists(report) or not os.path.getsize(report)
         with open(report, "a", newline="", encoding="utf-8") as fh:
             w = csv.writer(fh)
             if new:
-                w.writerow(["ruta", "tamano_bytes", "fecha", "estado", "metodo"])
+                w.writerow(t["columns"])
             for e in self._session.recover(dest, **options):
                 if isinstance(e, ev.FileRecovered):
                     w.writerow([e.path, e.size, e.mtime.isoformat() if e.mtime else "",
-                                "; ".join(WARNINGS[x] for x in e.warnings) or "ok", METHODS[e.method]])
+                                "; ".join(t["warnings"][x] for x in e.warnings) or t["ok"],
+                                t["methods"][e.method]])
                 elif isinstance(e, ev.OrphanRecovered):
                     w.writerow([e.path, e.size, e.mtime.isoformat() if e.mtime else "",
-                                ORPHAN_STATUS[e.status], METHODS[e.method]])
+                                t["orphan_status"][e.status], t["methods"][e.method]])
                 self._events.put((kind, e))
         self._events.put(("report", report))
 
@@ -470,7 +494,7 @@ class Backend(QObject):
                 foundBytes=updates.get("foundBytes", s["foundBytes"]) + e.size)
             return True
         elif isinstance(e, ev.FolderPlaced):
-            self._tree.folder_placed(e.cluster, e.parent, e.name, NAMES.unnamed_folder)
+            self._tree.folder_placed(e.cluster, e.parent, e.name, self._session.names.unnamed_folder)
             return True
         elif isinstance(e, ev.TreeReset):
             self._tree.clear()
@@ -527,8 +551,8 @@ class Backend(QObject):
         return self._session.folder_files(self._folder) if self._session and self._folder else []
 
     def _file_rows(self):
-        return [dict(name=en.name, size=fmt_size(en.size),
-                     date=en.mtime.strftime("%d/%m/%Y") if en.mtime else "",
+        return [dict(name=en.name, size=self.fmt_size(en.size),
+                     date=self._date(en.mtime),
                      checked=file_key(en) not in self._excluded)
                 for en in self._entries()[:FILES_SHOWN]]
 
@@ -561,8 +585,8 @@ class Backend(QObject):
             return
         en = self._preview = entries[i]
         ext = en.name.rsplit(".", 1)[-1].lower() if "." in en.name else ""
-        info = dict(name=en.name, size=fmt_size(en.size),
-                    date=en.mtime.strftime("%d/%m/%Y") if en.mtime else "", kind="info",
+        info = dict(name=en.name, size=self.fmt_size(en.size),
+                    date=self._date(en.mtime), kind="info",
                     text="", source="")
         self._preview_serial += 1
         if ext in IMAGE_TYPES and 0 < en.size <= PREVIEW_IMAGE_LIMIT:
@@ -591,9 +615,11 @@ class Backend(QObject):
         dest = self._s["destPath"]
         self._set(phase="naming", namesBusy=True, names=[], namesError="")
 
+        t, names = self._t, (self._session.names if self._session else self.names)
+
         def work():
-            items = naming.items_from_folder(dest, skip={REPORT, NAMES_LOG})
-            found = naming.suggest(items, naming.unnamed_folders(items, NAMES), label_name)
+            items = naming.items_from_folder(dest, skip={t["report"], t["names_log"]})
+            found = naming.suggest(items, naming.unnamed_folders(items, names), self._label)
             self._events.put(("names", found))
 
         self._run(work)
@@ -620,7 +646,8 @@ class Backend(QObject):
             return
         try:
             done = naming.rename(dest, [(r["current"], r["name"]) for r in rows],
-                                 os.path.join(dest, NAMES_LOG), os.path.join(dest, REPORT))
+                                 os.path.join(dest, self._t["names_log"]),
+                                 os.path.join(dest, self._t["report"]))
         except naming.RenameError as e:
             # the ones before it are done; show what is left
             self._set(namesError="exists:" + os.path.basename(str(e)))
@@ -634,7 +661,8 @@ class Backend(QObject):
     @Slot()
     def undoNames(self):
         dest = self._s["destPath"]
-        n = naming.undo(dest, os.path.join(dest, NAMES_LOG), os.path.join(dest, REPORT))
+        n = naming.undo(dest, os.path.join(dest, self._t["names_log"]),
+                                 os.path.join(dest, self._t["report"]))
         self._set(renamed=0, sumUnnamed=self._s["sumUnnamed"] + n)
 
     @Slot()

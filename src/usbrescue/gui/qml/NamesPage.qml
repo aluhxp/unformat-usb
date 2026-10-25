@@ -19,13 +19,13 @@ Item {
         spacing: 6
         Txt {
             width: parent.width; font.pixelSize: 26; font.weight: Font.ExtraBold
-            text: qsTr("Nombres para las carpetas que perdieron el suyo")
+            text: qsTr("Names for the folders that lost theirs")
         }
         Txt {
             width: parent.width; color: Theme.soft; font.pixelSize: 15
             text: page.st.namesBusy
-                ? qsTr("Mirando lo que hay dentro de cada carpeta…")
-                : qsTr("Cuando encontramos el nombre original dentro de algún archivo, lo usamos. Si no, proponemos uno según lo que contiene. Puedes cambiarlo antes de aplicarlo.")
+                ? qsTr("Looking at what each folder holds…")
+                : qsTr("When we find the original name inside some file, we use it. Otherwise we suggest one from what the folder holds. You can change it before applying it.")
         }
     }
 
@@ -37,7 +37,7 @@ Item {
         Txt {
             visible: !page.st.namesBusy && list.count === 0
             anchors.centerIn: parent; color: Theme.soft
-            text: qsTr("No quedan carpetas sin nombre.")
+            text: qsTr("No folders without a name are left.")
         }
         ListView {
             id: list
@@ -75,7 +75,7 @@ Item {
                             font.family: Theme.family; font.pixelSize: 16; font.weight: Font.Bold
                             color: Theme.ink
                             selectByMouse: true
-                            Accessible.name: qsTr("Nuevo nombre para %1").arg(row.modelData.current)
+                            Accessible.name: qsTr("New name for %1").arg(row.modelData.current)
                             background: Rectangle {
                                 radius: 8; color: Theme.bg
                                 border.color: field.activeFocus ? Theme.accent : Theme.line
@@ -97,17 +97,17 @@ Item {
                                 id: tagText; anchors.centerIn: parent
                                 font.pixelSize: 13; font.weight: Font.ExtraBold
                                 color: row.modelData.source === "original" ? Theme.accent : Theme.warnInk
-                                text: row.modelData.source === "original" ? qsTr("Nombre original") : qsTr("Sugerido por el contenido")
+                                text: row.modelData.source === "original" ? qsTr("Original name") : qsTr("Suggested from content")
                             }
                         }
                     }
                     Txt {
-                        readonly property string count: row.modelData.files === 1 ? qsTr("1 archivo") : qsTr("%1 archivos").arg(win.num(row.modelData.files))
+                        readonly property string count: row.modelData.files === 1 ? qsTr("1 file") : qsTr("%1 files").arg(win.num(row.modelData.files))
                         width: parent.width; color: Theme.soft; font.pixelSize: 13
                         wrapMode: Text.NoWrap; elide: Text.ElideMiddle
                         text: row.modelData.source === "original"
-                            ? qsTr("Ahora: %1 · %2 · lo vimos en %3").arg(row.modelData.current).arg(count).arg(row.modelData.example)
-                            : qsTr("Ahora: %1 · %2").arg(row.modelData.current).arg(count)
+                            ? qsTr("Now: %1 · %2 · seen in %3").arg(row.modelData.current).arg(count).arg(row.modelData.example)
+                            : qsTr("Now: %1 · %2").arg(row.modelData.current).arg(count)
                     }
                 }
             }
@@ -120,18 +120,18 @@ Item {
         anchors.margins: 24; anchors.leftMargin: 40
         spacing: 14
         Btn {
-            label: qsTr("Renombrar las marcadas (%1)").arg(page.ticked)
+            label: qsTr("Rename the ticked ones (%1)").arg(page.ticked)
             enabledLook: !page.st.namesBusy && page.ticked > 0
             onClicked: backend.applyNames(page.st.names.map((r, i) => page.nameAt(i)))
         }
-        Btn { label: qsTr("Volver sin cambiar nada"); primary: false; onClicked: backend.closeNames() }
+        Btn { label: qsTr("Go back without changes"); primary: false; onClicked: backend.closeNames() }
         Txt {
             anchors.verticalCenter: parent.verticalCenter
             visible: page.st.namesError !== ""
             color: Theme.warn; font.pixelSize: 14; font.weight: Font.Bold
-            text: page.st.namesError === "twice" ? qsTr("Dos carpetas no pueden llamarse igual.")
-                : page.st.namesError.startsWith("exists:") ? qsTr("Ya hay una carpeta llamada «%1». Elige otro nombre.").arg(page.st.namesError.slice(7))
-                : qsTr("No se pudo renombrar: %1").arg(page.st.namesError.slice(3))
+            text: page.st.namesError === "twice" ? qsTr("Two folders cannot have the same name.")
+                : page.st.namesError.startsWith("exists:") ? qsTr("There is already a folder called “%1”. Choose another name.").arg(page.st.namesError.slice(7))
+                : qsTr("Could not rename: %1").arg(page.st.namesError.slice(3))
         }
     }
 }
