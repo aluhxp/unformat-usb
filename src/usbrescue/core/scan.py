@@ -37,6 +37,14 @@ def exfat_set_ok(buf, i, allow_deleted):
     return nlen > 0 and sec == 1 + (nlen + 14) // 15
 
 
+def live_set_follows(buf, i):
+    """A live File+Stream+Name set at an entry boundary later in this sector."""
+    for q in range(i + ENTRY, i + SECTOR - 3 * ENTRY + 1, ENTRY):
+        if buf[q] == EX_FILE and exfat_set_ok(buf, q, False):
+            return True
+    return False
+
+
 def exfat_root_ok(buf, i):
     """First sector of an exFAT root folder: it opens with the volume's own
     entries (label, allocation bitmap, upcase table)."""
@@ -97,14 +105,21 @@ def scan_blocks(disk, want_deleted):
                     yield ("fat_ref", off + p, cl)
             j = attrs.find(b"\x10", j + 1)
 
-        # exFAT: a sector that starts with a File+Stream+Name entry set
+        # exFAT: a sector that starts with a File+Stream+Name entry set. One
+        # that starts with a deleted set is a folder too when a live set
+        # follows in the same sector: on a drive in use, the first file of a
+        # folder is often one that was deleted.
         firsts = buf[0:lim:SECTOR]
         found = []
-        for code in ((EX_FILE, 0x05) if want_deleted else (EX_FILE,)):
+        for code in (EX_FILE, 0x05):
             k = firsts.find(bytes([code]))
             while k != -1:
                 p = k * SECTOR
-                if exfat_set_ok(buf, p, want_deleted):
+                if code == EX_FILE:
+                    ok = exfat_set_ok(buf, p, want_deleted)
+                else:
+                    ok = exfat_set_ok(buf, p, True) and (want_deleted or live_set_follows(buf, p))
+                if ok:
                     found.append(off + p)
                 k = firsts.find(bytes([code]), k + 1)
         for s in sorted(found):

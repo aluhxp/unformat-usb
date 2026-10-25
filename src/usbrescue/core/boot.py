@@ -20,7 +20,8 @@ def _vbr(disk, off):
     fatsz = u32(b, 36)
     if bps in (512, 1024, 2048, 4096) and spc and fatsz and u16(b, 22) == 0:
         return {"fs": "fat32", "cs": bps * spc,
-                "start": off + (rsv + nfats * fatsz) * bps, "root": u32(b, 44)}
+                "start": off + (rsv + nfats * fatsz) * bps, "root": u32(b, 44),
+                "fat_off": off + rsv * bps, "fat_len": fatsz * bps}
     return None
 
 

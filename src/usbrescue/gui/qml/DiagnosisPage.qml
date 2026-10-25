@@ -71,7 +71,7 @@ Item {
                 }
                 Txt {
                     width: parent.width; color: Theme.soft; font.pixelSize: 15
-                    text: qsTr("Looking for something you deleted, or for what was there before a format? Then a search is worth it: what is no longer in sight is sometimes still on the drive.")
+                    text: qsTr("Deleted something by mistake? It may still be on the drive. We can look for it without touching what is there now.")
                 }
             }
         }
@@ -196,9 +196,8 @@ Item {
         visible: !page.busy
         anchors.right: parent.right; anchors.bottom: parent.bottom
         anchors.margins: 32; anchors.rightMargin: 72
-        primary: !page.healthy
-        label: page.healthy ? qsTr("Search anyway")
+        label: page.healthy ? qsTr("Look for deleted files")
             : page.st.mode === "safe" ? qsTr("Make the copy and search") : qsTr("Start searching")
-        onClicked: backend.start()
+        onClicked: page.healthy ? backend.findDeleted() : backend.start()
     }
 }

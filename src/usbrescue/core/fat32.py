@@ -76,6 +76,8 @@ def parse_dir(raw, want_deleted):
         en.size = u32(e, 28)
         en.mtime = fat_dt(u16(e, 24), u16(e, 22))
         en.deleted = deleted
+        if want_deleted == "only" and not deleted and not en.is_dir:
+            continue
         out.append(en)
     return out, False, False
 

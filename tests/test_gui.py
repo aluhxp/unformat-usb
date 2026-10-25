@@ -389,3 +389,42 @@ def test_only_photos_and_videos_from_the_window(app, scanned, tmp_path):
     wait_for(app, scanned, "done")
     got = [k for k in files_under(out) if not k.startswith("_")]
     assert len(got) == 12 and all(k.endswith(".jpg") and k.count("/") == 2 for k in got)
+
+
+def test_a_drive_in_use_brings_back_just_what_was_deleted(app, tmp_path):
+    from test_deleted import drive_with_deletions
+    backend = Backend()
+    backend.addImage(QUrl.fromLocalFile(str(drive_with_deletions(tmp_path))))
+    backend.choose(0)
+    wait_for(app, backend, "diagnosed")
+    assert backend.state["verdict"] == "in_use"
+    backend.findDeleted()
+    wait_for(app, backend, "scanned")
+    s = backend.state
+    assert s["deletedOnly"] and s["foundFiles"] == 2 and s["foundFolders"] == 2
+    assert names(backend) == ["Fotos", "Documentos"]       # folders with nothing deleted stay out
+    out = tmp_path / "out"
+    backend.recover(str(out))
+    wait_for(app, backend, "done")
+    report = (out / "_recovery_report.csv").read_text(encoding="utf-8")
+    assert "a newer file used its space" in report
+    assert backend.state["sumWarned"] == 1          # the written-over one is worth checking
+    backend.back()
+    assert not backend.state["deletedOnly"]
+
+
+def test_nothing_deleted_is_said_plainly(app, tmp_path):
+    from factory import exfat_image as X
+    path = tmp_path / "pendrive.img"
+    X.mkfs(path)
+    img = X.ExfatImage(path)
+    img.add("Docs/a.txt", b"still here\n" * 100)
+    img.flush()
+    img.close()
+    backend = Backend()
+    backend.addImage(QUrl.fromLocalFile(str(path)))
+    backend.choose(0)
+    wait_for(app, backend, "diagnosed")
+    backend.findDeleted()
+    wait_for(app, backend, "nothing")
+    backend.back()

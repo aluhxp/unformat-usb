@@ -11,6 +11,7 @@ from . import fat32, rawdisk
 from .boot import read_boot
 from .clues import name_clues
 from .exfat import ExfatTree
+from .inuse import clusters_in_use
 from .kinds import MEDIA, is_media
 from .model import (CopyProgress, FileRecovered, FolderFound, GeometryCalibrated, Names,
                     NothingFound, OrphanRecovered, RecoverFinished, ScanFinished,
@@ -111,6 +112,8 @@ def file_plan(en, g, fat):
 class Session:
     def __init__(self, source_path, *, include_deleted=False, fs_type=None,
                  find_orphans=True, names=None, disk=None):
+        """include_deleted: False, True, or "only" (just the files that were
+        deleted, in their folders: for a drive that was not formatted)."""
         self.source_path = source_path
         self.disk = disk or Source(source_path)
         self.include_deleted = include_deleted
@@ -119,6 +122,7 @@ class Session:
         self.names = names or Names()
         self.result = None
         self.live = None        # the exFAT tree while it is being built
+        self._in_use = False    # clusters the current file system uses (looked up once)
 
     def close(self):
         self.disk.close()
@@ -188,6 +192,12 @@ class Session:
         elif g.fat:
             fat_state = "kept"
 
+        if deleted == "only":
+            # the live files are not listed, but their space is not free:
+            # the search for loose files must not bring them back
+            in_use = clusters_in_use(disk, boot, g)
+            if in_use:
+                in_use.mark(claimed)
         unnamed = {c: p for c, p in paths.items() if c not in known and os.sep not in p}
         orphans, renamed = [], {}
         if fs == "exfat" and self.find_orphans:
@@ -233,6 +243,12 @@ class Session:
                         claimed[a:b] = b"\x01" * (b - a)
             plans.append((rel, en, runs, method))
         return plans, claimed, frag, chained
+
+    def _space_reused(self, g, runs):
+        """Is a deleted file's space used by the current file system?"""
+        if self._in_use is False:
+            self._in_use = clusters_in_use(self.disk, read_boot(self.disk), g)
+        return bool(self._in_use) and self._in_use.any(runs)
 
     # ------------------------------------------- looking before recovering
 
@@ -326,7 +342,11 @@ class Session:
                 if g.coff(en.cluster) + en.size > disk.size:
                     warnings.append("incomplete")
             if en.deleted:
-                warnings.append("was_deleted")
+                if self.include_deleted != "only":     # there, every file was deleted
+                    warnings.append("was_deleted")
+                if en.size and en.cluster >= 2 and self._space_reused(g, runs):
+                    en.overwritten = True
+                    warnings.append("overwritten")
 
             valid = en.size if en.valid is None else min(en.valid, en.size)
             bad_before = disk.bad_sectors

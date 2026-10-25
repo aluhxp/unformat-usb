@@ -56,3 +56,10 @@ def test_every_message_has_its_spanish():
 def test_undo_names_without_changes(tmp_path, capsys):
     assert cli.main(["--undo-names", str(tmp_path), "--lang", "en"]) == 0
     assert "no name changes" in capsys.readouterr().out
+
+
+def test_only_deleted(tmp_path, capsys):
+    from test_deleted import drive_with_deletions
+    out = tmp_path / "out"
+    assert cli.main([str(drive_with_deletions(tmp_path)), str(out), "--only-deleted", "--lang", "en"]) == 0
+    assert "Done: 1 files ok, 1 with warnings." in capsys.readouterr().out

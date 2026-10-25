@@ -35,7 +35,8 @@ def ex_checksum(es):
 
 
 def parse_dir(raw, want_deleted):
-    """Returns (entries, end_found, junk_found)."""
+    """Returns (entries, end_found, junk_found). want_deleted: False, True,
+    or "only" (folders, plus just the files that were deleted)."""
     out, p = [], 0
     n = len(raw)
     while p + ENTRY <= n:
@@ -68,7 +69,7 @@ def parse_dir(raw, want_deleted):
         # nlen counts UTF-16 units, not characters (an emoji takes two)
         name = name[:nlen * 2].decode("utf-16-le", "replace")
         en = Entry()
-        en.name = name if not deleted else "_" + name
+        en.name = name          # exFAT keeps a deleted file's whole name
         en.is_dir = bool(u16(es, 4) & 0x10)
         en.cluster = u32(es, 52)
         en.size = u64(es, 56)
@@ -76,8 +77,10 @@ def parse_dir(raw, want_deleted):
         en.contiguous = bool(es[33] & 0x02)
         en.mtime = ex_dt(u32(es, 12))
         en.deleted = deleted
-        out.append(en)
         p = end
+        if want_deleted == "only" and not deleted and not en.is_dir:
+            continue
+        out.append(en)
     return out, False, False
 
 

@@ -39,6 +39,8 @@ class FolderTreeModel(QAbstractListModel):
         super().__init__(parent)
         self.clear()
 
+    hide_empty = False
+
     def clear(self):
         self.beginResetModel()
         self.root = Node(None)
@@ -169,6 +171,8 @@ class FolderTreeModel(QAbstractListModel):
 
         def walk(node):
             for child in node.children:
+                if self.hide_empty and not child.total_files:
+                    continue        # looking for deleted files: folders without any stay out
                 out.append(child)
                 if child.expanded:
                     walk(child)

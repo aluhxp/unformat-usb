@@ -71,8 +71,8 @@
     </message>
     <message>
         <location filename="../qml/DiagnosisPage.qml" line="74"/>
-        <source>Looking for something you deleted, or for what was there before a format? Then a search is worth it: what is no longer in sight is sometimes still on the drive.</source>
-        <translation>Procurando algo que você apagou, ou o que havia antes de uma formatação? Então vale a pena buscar: o que não está mais à vista às vezes continua no pendrive.</translation>
+        <source>Deleted something by mistake? It may still be on the drive. We can look for it without touching what is there now.</source>
+        <translation>Apagou algo por engano? Pode ser que ainda esteja no pendrive. Podemos procurar sem mexer no que está lá agora.</translation>
     </message>
     <message>
         <location filename="../qml/DiagnosisPage.qml" line="89"/>
@@ -165,17 +165,17 @@
         <translation>Escolher outro</translation>
     </message>
     <message>
-        <location filename="../qml/DiagnosisPage.qml" line="200"/>
-        <source>Search anyway</source>
-        <translation>Buscar mesmo assim</translation>
+        <location filename="../qml/DiagnosisPage.qml" line="199"/>
+        <source>Look for deleted files</source>
+        <translation>Procurar arquivos apagados</translation>
     </message>
     <message>
-        <location filename="../qml/DiagnosisPage.qml" line="201"/>
+        <location filename="../qml/DiagnosisPage.qml" line="200"/>
         <source>Make the copy and search</source>
         <translation>Fazer a cópia e buscar</translation>
     </message>
     <message>
-        <location filename="../qml/DiagnosisPage.qml" line="201"/>
+        <location filename="../qml/DiagnosisPage.qml" line="200"/>
         <source>Start searching</source>
         <translation>Começar a busca</translation>
     </message>
@@ -369,12 +369,12 @@
         <translation>3 Resgatar</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="64"/>
+        <location filename="../qml/Main.qml" line="103"/>
         <source>Light</source>
         <translation>Claro</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="64"/>
+        <location filename="../qml/Main.qml" line="103"/>
         <source>Dark</source>
         <translation>Escuro</translation>
     </message>
@@ -382,57 +382,67 @@
 <context>
     <name>MessagePage</name>
     <message>
-        <location filename="../qml/MessagePage.qml" line="9"/>
+        <location filename="../qml/MessagePage.qml" line="10"/>
         <source>We found no folders on this drive.</source>
         <translation>Não encontramos pastas neste pendrive.</translation>
     </message>
     <message>
-        <location filename="../qml/MessagePage.qml" line="10"/>
+        <location filename="../qml/MessagePage.qml" line="11"/>
+        <source>We found no deleted files to bring back.</source>
+        <translation>Não encontramos arquivos apagados que possam ser recuperados.</translation>
+    </message>
+    <message>
+        <location filename="../qml/MessagePage.qml" line="12"/>
         <source>We are not allowed to read this drive.</source>
         <translation>Não temos permissão para ler este pendrive.</translation>
     </message>
     <message>
-        <location filename="../qml/MessagePage.qml" line="11"/>
+        <location filename="../qml/MessagePage.qml" line="13"/>
         <source>Choose another place to save to.</source>
         <translation>Escolha outro lugar para salvar.</translation>
     </message>
     <message>
-        <location filename="../qml/MessagePage.qml" line="12"/>
+        <location filename="../qml/MessagePage.qml" line="14"/>
         <source>We could not read the drive.</source>
         <translation>Não conseguimos ler o pendrive.</translation>
     </message>
     <message>
-        <location filename="../qml/MessagePage.qml" line="15"/>
+        <location filename="../qml/MessagePage.qml" line="17"/>
         <source>It may have had a full format, which erases everything, or used another file system. It&apos;s not your fault, and we&apos;re sorry.</source>
         <translation>Ele pode ter passado por uma formatação completa, que apaga tudo, ou usar outro sistema de arquivos. Não é culpa sua, e sentimos muito.</translation>
     </message>
     <message>
-        <location filename="../qml/MessagePage.qml" line="17"/>
+        <location filename="../qml/MessagePage.qml" line="18"/>
+        <source>The space of files deleted long ago is often reused by newer ones. It&apos;s not your fault, and we&apos;re sorry.</source>
+        <translation>O espaço de arquivos apagados há muito tempo costuma ser ocupado por outros mais novos. Não é culpa sua, e sentimos muito.</translation>
+    </message>
+    <message>
+        <location filename="../qml/MessagePage.qml" line="20"/>
         <source>Windows only lets an administrator read a whole drive. Open %1 as administrator: Windows will ask you to confirm.</source>
         <translation>O Windows só deixa um administrador ler um pendrive inteiro. Abra o %1 como administrador: o Windows vai pedir para você confirmar.</translation>
     </message>
     <message>
-        <location filename="../qml/MessagePage.qml" line="18"/>
+        <location filename="../qml/MessagePage.qml" line="21"/>
         <source>Your system only lets a whole drive be read with the administrator password. If you closed the password window, choose the drive again and retry.</source>
         <translation>Seu sistema só deixa ler um pendrive inteiro com a senha de administrador. Se você fechou a janela da senha, escolha o pendrive de novo e tente outra vez.</translation>
     </message>
     <message>
-        <location filename="../qml/MessagePage.qml" line="19"/>
+        <location filename="../qml/MessagePage.qml" line="22"/>
         <source>The chosen folder is on the very drive you want to rescue. Saving there would cover up the files we are looking for.</source>
         <translation>A pasta escolhida está no próprio pendrive que você quer resgatar. Salvar ali cobriria os arquivos que estamos procurando.</translation>
     </message>
     <message>
-        <location filename="../qml/MessagePage.qml" line="20"/>
+        <location filename="../qml/MessagePage.qml" line="23"/>
         <source>Check that it is still plugged in and try again. Details: %1</source>
         <translation>Confira se ele continua conectado e tente de novo. Detalhes: %1</translation>
     </message>
     <message>
-        <location filename="../qml/MessagePage.qml" line="35"/>
+        <location filename="../qml/MessagePage.qml" line="38"/>
         <source>Open as administrator</source>
         <translation>Abrir como administrador</translation>
     </message>
     <message>
-        <location filename="../qml/MessagePage.qml" line="39"/>
+        <location filename="../qml/MessagePage.qml" line="42"/>
         <source>Back to the start</source>
         <translation>Voltar ao início</translation>
     </message>
@@ -639,147 +649,157 @@
         <translation>%1 arquivos já resgatados; ainda procurando</translation>
     </message>
     <message>
-        <location filename="../qml/TreePage.qml" line="26"/>
+        <location filename="../qml/TreePage.qml" line="27"/>
+        <source>%1 deleted files found so far</source>
+        <translation>%1 arquivos apagados encontrados até agora</translation>
+    </message>
+    <message>
+        <location filename="../qml/TreePage.qml" line="27"/>
+        <source>We found %1 deleted files</source>
+        <translation>Encontramos %1 arquivos apagados</translation>
+    </message>
+    <message>
+        <location filename="../qml/TreePage.qml" line="29"/>
         <source>%1 files in %2 folders found so far</source>
         <translation>%1 arquivos em %2 pastas encontrados até agora</translation>
     </message>
     <message>
-        <location filename="../qml/TreePage.qml" line="26"/>
+        <location filename="../qml/TreePage.qml" line="29"/>
         <source>We found %1 files in %2 folders</source>
         <translation>Encontramos %1 arquivos em %2 pastas</translation>
     </message>
     <message>
-        <location filename="../qml/TreePage.qml" line="33"/>
+        <location filename="../qml/TreePage.qml" line="36"/>
         <source>Sorting out what we found…</source>
         <translation>Organizando o que encontramos…</translation>
     </message>
     <message>
-        <location filename="../qml/TreePage.qml" line="35"/>
+        <location filename="../qml/TreePage.qml" line="38"/>
         <source>Searching: %1 % · %2</source>
         <translation>Buscando: %1 % · %2</translation>
     </message>
     <message>
-        <location filename="../qml/TreePage.qml" line="36"/>
+        <location filename="../qml/TreePage.qml" line="39"/>
         <source>Search finished · %1</source>
         <translation>Busca concluída · %1</translation>
     </message>
     <message>
-        <location filename="../qml/TreePage.qml" line="43"/>
+        <location filename="../qml/TreePage.qml" line="46"/>
         <source>The copy is done: you can unplug the drive now. We are working on the copy.</source>
         <translation>A cópia terminou: você já pode desconectar o pendrive. Estamos trabalhando na cópia.</translation>
     </message>
     <message>
-        <location filename="../qml/TreePage.qml" line="58"/>
+        <location filename="../qml/TreePage.qml" line="61"/>
         <source>Folders will show up here.</source>
         <translation>As pastas vão aparecer aqui.</translation>
     </message>
     <message>
-        <location filename="../qml/TreePage.qml" line="97"/>
+        <location filename="../qml/TreePage.qml" line="100"/>
         <source>Placing: folders whose place we don&apos;t know yet</source>
         <translation>Posicionando: pastas cujo lugar ainda não sabemos</translation>
     </message>
     <message>
-        <location filename="../qml/TreePage.qml" line="132"/>
+        <location filename="../qml/TreePage.qml" line="150"/>
         <source>Rescued</source>
         <translation>Resgatado</translation>
     </message>
     <message>
-        <location filename="../qml/TreePage.qml" line="138"/>
+        <location filename="../qml/TreePage.qml" line="156"/>
         <source>Name lost</source>
         <translation>Nome perdido</translation>
     </message>
     <message>
-        <location filename="../qml/TreePage.qml" line="146"/>
+        <location filename="../qml/TreePage.qml" line="164"/>
         <source>1 file</source>
         <translation>1 arquivo</translation>
     </message>
     <message>
-        <location filename="../qml/TreePage.qml" line="146"/>
+        <location filename="../qml/TreePage.qml" line="164"/>
         <source>%1 files</source>
         <translation>%1 arquivos</translation>
     </message>
     <message>
-        <location filename="../qml/TreePage.qml" line="164"/>
+        <location filename="../qml/TreePage.qml" line="182"/>
         <source>Pick a folder to see what is inside.</source>
         <translation>Escolha uma pasta para ver o que tem dentro.</translation>
     </message>
     <message>
-        <location filename="../qml/TreePage.qml" line="205"/>
+        <location filename="../qml/TreePage.qml" line="224"/>
         <source>This picture cannot be shown: it may be damaged.</source>
         <translation>Esta imagem não pode ser mostrada: pode estar danificada.</translation>
     </message>
     <message>
-        <location filename="../qml/TreePage.qml" line="205"/>
+        <location filename="../qml/TreePage.qml" line="224"/>
         <source>Loading the picture…</source>
         <translation>Carregando a imagem…</translation>
     </message>
     <message>
-        <location filename="../qml/TreePage.qml" line="206"/>
+        <location filename="../qml/TreePage.qml" line="225"/>
         <source>No preview for this kind of file yet.</source>
         <translation>Ainda não há prévia para este tipo de arquivo.</translation>
     </message>
     <message>
-        <location filename="../qml/TreePage.qml" line="223"/>
+        <location filename="../qml/TreePage.qml" line="242"/>
         <source>This folder has no files of its own: look inside its subfolders.</source>
         <translation>Esta pasta não tem arquivos próprios: olhe dentro das subpastas.</translation>
     </message>
     <message>
-        <location filename="../qml/TreePage.qml" line="236"/>
+        <location filename="../qml/TreePage.qml" line="255"/>
         <source>…and %1 more files in this folder</source>
         <translation>…e mais %1 arquivos nesta pasta</translation>
     </message>
     <message>
-        <location filename="../qml/TreePage.qml" line="288"/>
+        <location filename="../qml/TreePage.qml" line="307"/>
         <source>Only photos and videos</source>
         <translation>Só fotos e vídeos</translation>
     </message>
     <message>
-        <location filename="../qml/TreePage.qml" line="293"/>
+        <location filename="../qml/TreePage.qml" line="312"/>
         <source>Only photos and videos, each in its folder</source>
         <translation>Só fotos e vídeos, cada um na sua pasta</translation>
     </message>
     <message>
-        <location filename="../qml/TreePage.qml" line="301"/>
+        <location filename="../qml/TreePage.qml" line="320"/>
         <source>Include files without a folder</source>
         <translation>Incluir arquivos sem pasta</translation>
     </message>
     <message>
-        <location filename="../qml/TreePage.qml" line="308"/>
+        <location filename="../qml/TreePage.qml" line="327"/>
         <source>Include %1 photos and videos without a folder</source>
         <translation>Incluir %1 fotos e vídeos sem pasta</translation>
     </message>
     <message>
-        <location filename="../qml/TreePage.qml" line="310"/>
+        <location filename="../qml/TreePage.qml" line="329"/>
         <source>Include 1 file without a folder (it was loose, outside the folders)</source>
         <translation>Incluir 1 arquivo sem pasta (estava solto, fora das pastas)</translation>
     </message>
     <message>
-        <location filename="../qml/TreePage.qml" line="311"/>
+        <location filename="../qml/TreePage.qml" line="330"/>
         <source>Include %1 files without a folder (the loose ones, outside the folders)</source>
         <translation>Incluir %1 arquivos sem pasta (os soltos, fora das pastas)</translation>
     </message>
     <message>
-        <location filename="../qml/TreePage.qml" line="320"/>
+        <location filename="../qml/TreePage.qml" line="339"/>
         <source>Will be saved in: %1</source>
         <translation>Será salvo em: %1</translation>
     </message>
     <message>
-        <location filename="../qml/TreePage.qml" line="323"/>
+        <location filename="../qml/TreePage.qml" line="342"/>
         <source>Change…</source>
         <translation>Mudar…</translation>
     </message>
     <message>
-        <location filename="../qml/TreePage.qml" line="334"/>
+        <location filename="../qml/TreePage.qml" line="353"/>
         <source>Rescue the ticked ones now (%1)</source>
         <translation>Resgatar as marcadas agora (%1)</translation>
     </message>
     <message>
-        <location filename="../qml/TreePage.qml" line="334"/>
+        <location filename="../qml/TreePage.qml" line="353"/>
         <source>Rescue the ticked ones (%1)</source>
         <translation>Resgatar as marcadas (%1)</translation>
     </message>
     <message>
-        <location filename="../qml/TreePage.qml" line="341"/>
+        <location filename="../qml/TreePage.qml" line="360"/>
         <source>Where should we save what we rescue?</source>
         <translation>Onde salvamos o que for resgatado?</translation>
     </message>

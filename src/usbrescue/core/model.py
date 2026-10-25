@@ -7,12 +7,13 @@ class Entry:
     """A file or folder as described by a directory entry."""
 
     __slots__ = ("name", "is_dir", "cluster", "size", "valid", "mtime",
-                 "deleted", "contiguous")
+                 "deleted", "contiguous", "overwritten")
 
     def __init__(self):
         self.valid = None
         self.contiguous = True
         self.deleted = False
+        self.overwritten = False    # deleted, and a newer file now uses its space
 
 
 class Geometry:

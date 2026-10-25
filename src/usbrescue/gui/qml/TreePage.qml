@@ -23,6 +23,9 @@ Item {
                     ? qsTr("Looking for your folders…")
                     : page.scanning && page.st.rescuedEarly > 0
                     ? qsTr("%1 files rescued already; still searching").arg(win.num(page.st.rescuedEarly))
+                    : page.st.deletedOnly
+                    ? (page.scanning ? qsTr("%1 deleted files found so far") : qsTr("We found %1 deleted files"))
+                        .arg(win.num(page.st.foundFiles))
                     : (page.scanning ? qsTr("%1 files in %2 folders found so far") : qsTr("We found %1 files in %2 folders"))
                         .arg(win.num(page.st.foundFiles)).arg(win.num(page.st.foundFolders))
             }

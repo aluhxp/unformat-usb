@@ -88,6 +88,8 @@ ES = {
     "include files that were already deleted before the format":
         "incluir archivos que ya estaban borrados antes del formateo",
     "show what was found without copying": "mostrar lo encontrado sin copiar",
+    "on a drive that was not formatted: bring back only the deleted files":
+        "en un pendrive que no se formateó: recuperar solo los archivos borrados",
     "don't look for files without a folder (the loose ones in the root)":
         "no buscar archivos sin carpeta (los que estaban sueltos en la raíz)",
     "extract only the files without a folder, without copying the rest":
@@ -309,6 +311,8 @@ def parser():
                     help=_("force the file system type"))
     ap.add_argument("--deleted", "--borrados", dest="deleted", action="store_true",
                     help=_("include files that were already deleted before the format"))
+    ap.add_argument("--only-deleted", "--solo-borrados", dest="only_deleted", action="store_true",
+                    help=_("on a drive that was not formatted: bring back only the deleted files"))
     ap.add_argument("--list-only", "--solo-listar", dest="list_only", action="store_true",
                     help=_("show what was found without copying"))
     ap.add_argument("--no-orphans", "--sin-huerfanos", dest="no_orphans", action="store_true",
@@ -362,7 +366,8 @@ def main(argv=None):
         args.source = args.image
 
     try:
-        session = Session(args.source, include_deleted=args.deleted, fs_type=args.fs_type,
+        deleted = "only" if args.only_deleted else args.deleted
+        session = Session(args.source, include_deleted=deleted, fs_type=args.fs_type,
                           find_orphans=not args.no_orphans, names=names)
     except PermissionError:
         print(_("No permission to read the source. Run it with sudo (or as administrator on Windows)."))

@@ -3,16 +3,19 @@ import QtQuick
 Item {
     id: page
     readonly property var st: win.st
-    readonly property string code: st.phase === "nothing" ? "nothing" : (st.error.startsWith("io:") ? "io" : st.error)
+    readonly property string code: st.phase === "nothing" ? (st.deletedOnly ? "no_deleted" : "nothing")
+        : (st.error.startsWith("io:") ? "io" : st.error)
 
     readonly property var headline: ({
         nothing: qsTr("We found no folders on this drive."),
+        no_deleted: qsTr("We found no deleted files to bring back."),
         no_permission: qsTr("We are not allowed to read this drive."),
         same_device: qsTr("Choose another place to save to."),
         io: qsTr("We could not read the drive.")
     })
     readonly property var detail: ({
         nothing: qsTr("It may have had a full format, which erases everything, or used another file system. It's not your fault, and we're sorry."),
+        no_deleted: qsTr("The space of files deleted long ago is often reused by newer ones. It's not your fault, and we're sorry."),
         no_permission: backend.canRestartAsAdmin
             ? qsTr("Windows only lets an administrator read a whole drive. Open %1 as administrator: Windows will ask you to confirm.").arg(appName)
             : qsTr("Your system only lets a whole drive be read with the administrator password. If you closed the password window, choose the drive again and retry."),

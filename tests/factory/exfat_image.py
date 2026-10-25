@@ -41,6 +41,7 @@ class _Dir:
     def __init__(self):
         self.children = {}      # name -> _Dir | _File, in creation order
         self.clusters = []
+        self.entry_at = None    # (offset, length) of its entry set, once written
 
 
 class _File:
@@ -48,6 +49,7 @@ class _File:
         self.data = data
         self.clusters = []
         self.partner = None     # file whose clusters alternate with this one's
+        self.entry_at = None
 
 
 class ExfatImage:
@@ -220,7 +222,13 @@ class ExfatImage:
                 self._allocate(node)
 
     def _write_tree(self, d, prefix=b""):
-        body = prefix + b"".join(self._entry_set(n, node) for n, node in d.children.items())
+        sets, at = [], len(prefix)
+        for n, node in d.children.items():
+            es = self._entry_set(n, node)
+            node.entry_at = (at, len(es), d)
+            sets.append(es)
+            at += len(es)
+        body = prefix + b"".join(sets)
         assert len(body) <= len(d.clusters) * self.cs, "folder does not fit"
         body += b"\x00" * (len(d.clusters) * self.cs - len(body))
         for i, c in enumerate(d.clusters):
@@ -243,6 +251,41 @@ class ExfatImage:
 
     def close(self):
         self.f.close()
+
+    # ---------------------------------------------------------- after use
+
+    def _node(self, path):
+        node = self.root
+        for part in path.split("/"):
+            node = node.children[part]
+        return node
+
+    def _disk_offset(self, d, at):
+        return self.coff(d.clusters[at // self.cs]) + at % self.cs
+
+    def delete(self, path):
+        """What deleting a file does: its entries lose their in-use bit and
+        its clusters are freed in the bitmap. The data stays where it was."""
+        node = self._node(path)
+        at, length, d = node.entry_at
+        for k in range(0, length, 32):
+            off = self._disk_offset(d, at + k)
+            t = self._read(off, 1)[0]
+            self._write(off, bytes([t & 0x7F]))
+        for c in node.clusters:
+            self.bitmap[(c - 2) >> 3] &= ~(1 << ((c - 2) & 7)) & 0xFF
+        self._write(self.coff(self.bitmap_cluster), bytes(self.bitmap))
+        self.f.flush()
+
+    def reuse(self, path, filler=b"N"):
+        """A newer file took the space of a deleted one: its clusters are
+        written over and marked in use again."""
+        node = self._node(path)
+        for c in node.clusters:
+            self._write(self.coff(c), filler * self.cs)
+            self.bitmap[(c - 2) >> 3] |= 1 << ((c - 2) & 7)
+        self._write(self.coff(self.bitmap_cluster), bytes(self.bitmap))
+        self.f.flush()
 
     # --------------------------------------------------------------- format
 

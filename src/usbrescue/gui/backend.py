@@ -82,7 +82,9 @@ class Backend(QObject):
             preview={},
             recProgress=0.0, recEta=-1, recSpeed=0.0, recCurrent="", recDone=0, recTotal=0,
             sumOk=0, sumWarned=0, sumOrphans=0, sumUnnamed=0, destPath="", reportPath="",
-            names=[], namesBusy=False, namesError="", renamed=0)
+            names=[], namesBusy=False, namesError="", renamed=0,
+            deletedOnly=False)      # a drive in use: look just for what was deleted
+        self._tree.hide_empty = False
 
     def _set(self, **values):
         self._s.update(values)
@@ -284,6 +286,15 @@ class Backend(QObject):
             self._set(mode=mode)
 
     @Slot()
+    def findDeleted(self):
+        """On a drive that was not formatted: bring back only deleted files."""
+        self._set(deletedOnly=True)
+        self._tree.hide_empty = True
+        if self._session:
+            self._session.include_deleted = "only"
+        self.start()
+
+    @Slot()
     def start(self):
         """Begin with whichever way was chosen: copy first, or read the drive."""
         if self._s["mode"] == "safe":
@@ -316,7 +327,8 @@ class Backend(QObject):
                 self._events.put(("image", (e, time.time() - started, first)))
         # from here on the drive is no longer needed: everything reads the copy
         self._close()
-        self._session = Session(path, names=self.names)
+        self._session = Session(path, names=self.names,
+                                include_deleted="only" if self._s["deletedOnly"] else False)
         self._events.put(("image_done", e.bad_bytes))
         self._scan_started = time.time()
         self._do_scan()
@@ -517,10 +529,13 @@ class Backend(QObject):
             _, files, size = self._selection()
             if self._s["phase"] == "recovering":
                 updates.update(early=False)     # a rescue asked for at the last moment goes on
+            elif self._s["deletedOnly"] and not r.plans and not r.orphans:
+                updates.update(phase="nothing")
             else:
                 updates.update(phase="scanned")
+            folders = len({rel for rel, *_ in r.plans}) if self._s["deletedOnly"] else len(r.contents)
             updates.update(scanProgress=1.0, scanEta=0,
-                           foundFolders=len(r.contents), foundFiles=len(r.plans),
+                           foundFolders=folders, foundFiles=len(r.plans),
                            foundBytes=r.total_bytes, orphanCount=len(r.orphans),
                            mediaOrphans=sum(o.ext in MEDIA for o in r.orphans),
                            rootRecovered=r.root_recovered, sumUnnamed=r.unnamed_tops,
