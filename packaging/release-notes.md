@@ -15,7 +15,7 @@
 - Brings back loose files named after their content, without duplicates.
 - Suggests names for folders that lost theirs (you approve, and it can be undone).
 - Quick option: only photos and videos, each in its folder.
-- English and Spanish.
+- English, Spanish and Portuguese.
 
 Windows releases are going to be signed through SignPath Foundation's free program: see the [Code signing policy](https://github.com/aluhxp/unformat-usb/blob/main/docs/code-signing.md).
 

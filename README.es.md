@@ -2,7 +2,7 @@
 
 **Recupera las carpetas y archivos de un pendrive formateado por error. Gratis, sin límites, y sin escribir nunca en el pendrive.**
 
-[Read in English](README.md)
+[Sitio web](https://aluhxp.github.io/unformat-usb/es/) · [Read in English](README.md)
 
 ## ¿Formateaste tu pendrive por error?
 
@@ -15,6 +15,7 @@ Para todo y no copies nada nuevo en él. Un formateo rápido (el que hacen Windo
 - **Nombres perdidos**: propone un nombre para las carpetas que lo perdieron y solo las renombra si tú lo apruebas. Se puede deshacer.
 - **Solo fotos y videos**, cada uno en su carpeta, si es lo único que te importa.
 - **Nunca escribe en el pendrive** ni deja guardar lo rescatado en él.
+- En **español, inglés y portugués**.
 
 Funciona con pendrives y tarjetas en **exFAT** y **FAT32**.
 

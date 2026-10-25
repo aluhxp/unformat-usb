@@ -26,7 +26,7 @@ POLICY = REPO + "/blob/main/docs/code-signing.md"
 
 T = {
     "en": dict(
-        path="", other="es/", other_name="Español", lang_attr="en",
+        path="", lang_attr="en",
         title="Unformat USB: recover a USB drive formatted by mistake, free",
         description="Free, open source program that brings back the folders and files of a USB "
                     "drive or memory card formatted by mistake (exFAT and FAT32). No limits, "
@@ -35,7 +35,7 @@ T = {
         lead="Your files are probably still there. Unformat USB finds them and brings them back "
              "with their folders. <strong>Free, no limits</strong>, and it never writes to the drive.",
         dl_win="Download for Windows", dl_mac="Download for macOS", dl_linux="Linux →",
-        dl_note="Version {v} · English and Spanish · not signed yet: Windows may warn you, "
+        dl_note="Version {v} · English, Spanish and Portuguese · not signed yet: Windows may warn you, "
                 "choose <em>More info → Run anyway</em>.",
         first_h="First, before anything else",
         first=["<strong>Stop using the drive.</strong> Don't copy anything new onto it: every new "
@@ -104,7 +104,7 @@ T = {
         ad="Advertisement",
     ),
     "es": dict(
-        path="es/", other="../", other_name="English", lang_attr="es",
+        path="es/", lang_attr="es",
         title="Unformat USB: recuperar un pendrive formateado por error, gratis",
         description="Programa gratuito y de código abierto que recupera las carpetas y archivos "
                     "de un pendrive o tarjeta de memoria formateada por error (exFAT y FAT32). Sin "
@@ -114,7 +114,7 @@ T = {
              "recupera con sus carpetas. <strong>Gratis, sin límites</strong>, y nunca escribe "
              "nada en la unidad.",
         dl_win="Descargar para Windows", dl_mac="Descargar para macOS", dl_linux="Linux →",
-        dl_note="Versión {v} · español e inglés · aún sin firmar: Windows puede mostrar un aviso, "
+        dl_note="Versión {v} · español, inglés y portugués · aún sin firmar: Windows puede mostrar un aviso, "
                 "elige <em>Más información → Ejecutar de todas formas</em>.",
         first_h="Primero, antes que nada",
         first=["<strong>Deja de usar el pendrive.</strong> No copies nada nuevo: cada archivo "
@@ -183,6 +183,85 @@ T = {
         foot_license="Licencia GPL-3.0",
         ad="Publicidad",
     ),
+    "pt": dict(
+        path="pt/", lang_attr="pt-BR",
+        title="Unformat USB: recuperar um pendrive formatado por engano, grátis",
+        description="Programa grátis e de código aberto que recupera as pastas e arquivos de um "
+                    "pendrive ou cartão de memória formatado por engano (exFAT e FAT32). Sem "
+                    "limites e sem gravar nada no pendrive. Windows, macOS e Linux.",
+        h1="Formatou seu pendrive por engano?",
+        lead="Provavelmente seus arquivos ainda estão aí. O Unformat USB encontra e recupera "
+             "tudo com as pastas. <strong>Grátis, sem limites</strong>, e nunca grava nada no "
+             "pendrive.",
+        dl_win="Baixar para Windows", dl_mac="Baixar para macOS", dl_linux="Linux →",
+        dl_note="Versão {v} · português, espanhol e inglês · ainda sem assinatura: o Windows "
+                "pode mostrar um aviso, escolha <em>Mais informações → Executar assim mesmo</em>.",
+        first_h="Primeiro, antes de tudo",
+        first=["<strong>Pare de usar o pendrive.</strong> Não copie nada novo: cada arquivo "
+               "novo pode cobrir um antigo.",
+               "<strong>Não formate de novo</strong> e não deixe um programa “consertar” o pendrive.",
+               "Deixe desconectado até ter o programa pronto."],
+        shot_alt="Unformat USB mostrando as pastas encontradas em um pendrive formatado",
+        how_h="Como funciona",
+        how=[("Escolha o pendrive", "Só aparecem pendrives e cartões externos, assim você não "
+              "escolhe o disco do computador por engano."),
+             ("Veja as pastas aparecerem", "Mostra o que encontra enquanto procura, com prévia. "
+              "Marque o que quiser."),
+             ("Resgate", "Os arquivos são copiados para o seu computador, nunca para o próprio "
+              "pendrive.")],
+        feat_h="O que ele faz",
+        feats=[("Reconstrói suas pastas", "Com nomes e conteúdo originais, incluindo vídeos "
+                "grandes guardados em pedaços."),
+               ("Grátis de verdade", "Sem limite de 100 MB ou 500 MB, sem teste, sem conta. "
+                "Recupere tudo."),
+               ("Só leitura", "Nunca grava, conserta ou formata o pendrive, e não deixa salvar o "
+                "resgate nele."),
+               ("Modo seguro", "Primeiro copia o pendrive inteiro para o computador e trabalha "
+                "na cópia. Ideal se o pendrive estiver falhando."),
+               ("Arquivos soltos também", "Os que estavam fora das pastas voltam com nome pelo "
+                "conteúdo (a data de uma foto, o título de um documento)."),
+               ("Dá nome a pastas perdidas", "Sugere um nome para as pastas que perderam o seu. "
+                "Você aprova, e dá para desfazer."),
+               ("Só fotos e vídeos", "Com uma marca, você recupera só suas fotos e vídeos, cada "
+                "um na sua pasta."),
+               ("Privado", "Funciona sem internet. Não envia nada sobre você ou seus arquivos.")],
+        shots_h="Por dentro",
+        shots=[("1-pick", "Escolha o pendrive"), ("5-done", "Pronto: o que voltou"),
+               ("6-names", "Nomes para pastas que perderam o seu")],
+        honest_h="Quando não dá para ajudar",
+        honest="Para ser claro: depois de uma <strong>formatação completa</strong> (grava zeros "
+               "em tudo), de muito uso do pendrive depois de formatar, ou em um "
+               "<strong>SSD/NVMe</strong> (o sistema apaga sozinho o espaço livre), pode não "
+               "sobrar nada. O Unformat USB avisa em vez de prometer o que não pode. Funciona "
+               "com <strong>exFAT</strong> e <strong>FAT32</strong>, os formatos de quase todos "
+               "os pendrives e cartões; NTFS ainda não.",
+        faq_h="Perguntas",
+        faq=[("Dá para recuperar arquivos depois de formatar um pendrive?",
+              "Normalmente sim. A formatação rápida, a padrão do Windows, macOS e Linux, só apaga "
+              "o índice. Os arquivos continuam no lugar até algo novo ser gravado por cima."),
+             ("É grátis mesmo?",
+              "Sim. Sem limites, sem teste, sem anúncios no programa. É código aberto (GPL-3.0). "
+              "Se ajudar, você pode pagar um café para a gente, mas não é obrigatório."),
+             ("Funciona com cartões SD e microSD?",
+              "Sim, com qualquer cartão ou pendrive em exFAT ou FAT32, usando um leitor ou "
+              "adaptador."),
+             ("Pode danificar meu pendrive?",
+              "Não. Ele só lê. Nunca grava, conserta ou formata o pendrive, e não salva os "
+              "arquivos resgatados no mesmo pendrive."),
+             ("Por que o Windows pede permissão de administrador?",
+              "Para ler o pendrive inteiro, por baixo dos arquivos, é preciso. É o único motivo."),
+             ("O Windows diz “O Windows protegeu o computador”. É seguro?",
+              "O programa ainda não tem assinatura (o certificado está a caminho). Escolha “Mais "
+              "informações” e “Executar assim mesmo”. O código é público e cada versão é "
+              "compilada e testada automaticamente no GitHub.")],
+        donate_h="Ajudou?",
+        donate="O Unformat USB é grátis e vai continuar assim. Se recuperou seus arquivos, você "
+               "pode pagar um café para a gente.",
+        donate_btn="Doar com PayPal",
+        foot_src="Código-fonte", foot_policy="Política de assinatura de código e privacidade",
+        foot_license="Licença GPL-3.0",
+        ad="Publicidade",
+    ),
 }
 
 MASCOT = """<svg class="mascot" viewBox="0 0 64 76" aria-hidden="true">
@@ -211,6 +290,9 @@ def page(lang):
               "operatingSystem": "Windows, macOS, Linux", "description": t["description"],
               "url": url, "downloadUrl": EXE, "license": "https://www.gnu.org/licenses/gpl-3.0.html",
               "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}}
+    names = {"en": "English", "es": "Español", "pt": "Português"}
+    langs = "".join(f'<a class="lang" href="{up}{T[o]["path"]}" hreflang="{T[o]["lang_attr"]}" '
+                    f'lang="{T[o]["lang_attr"]}">{names[o]}</a>' for o in T if o != lang)
     first = "".join(f"<li>{x}</li>" for x in t["first"])
     how = "".join(f'<li><span class="n">{i}</span><h3>{h}</h3><p>{p}</p></li>'
                   for i, (h, p) in enumerate(t["how"], 1))
@@ -233,6 +315,7 @@ def page(lang):
 <link rel="canonical" href="{url}">
 <link rel="alternate" hreflang="en" href="{SITE}">
 <link rel="alternate" hreflang="es" href="{SITE}es/">
+<link rel="alternate" hreflang="pt-BR" href="{SITE}pt/">
 <link rel="alternate" hreflang="x-default" href="{SITE}">
 <meta property="og:type" content="website">
 <meta property="og:title" content="{t['title']}">
@@ -250,7 +333,7 @@ def page(lang):
 <body>
 <header class="top wrap">
   <a class="brand" href="{url}">{MASCOT}<span>{APP_NAME}</span></a>
-  <a class="lang" href="{t['other']}" hreflang="{'es' if lang == 'en' else 'en'}">{t['other_name']}</a>
+  <nav class="langs">{langs}</nav>
 </header>
 <main>
 <section class="hero wrap">
@@ -335,8 +418,8 @@ def page(lang):
 def main():
     docs = os.path.join(ROOT, "docs")
     shots = sys.argv[1] if len(sys.argv) > 1 else None
-    if shots:   # folder made by tools/screens.py: en/, en_dark/, es/
-        for sub in ("en", "en_dark", "es"):
+    if shots:   # folder made by tools/screens.py: en/, en_dark/, es/, pt/
+        for sub in ("en", "en_dark", "es", "pt"):
             out = os.path.join(docs, "img", sub)
             os.makedirs(out, exist_ok=True)
             for name in ("1-pick", "3-tree", "5-done", "6-names"):
@@ -346,10 +429,10 @@ def main():
         os.makedirs(folder, exist_ok=True)
         with open(os.path.join(folder, "index.html"), "w", encoding="utf-8") as fh:
             fh.write(page(lang))
+    urls = "".join(f"  <url><loc>{SITE}{T[x]['path']}</loc></url>\n" for x in T)
     with open(os.path.join(docs, "sitemap.xml"), "w") as fh:
         fh.write('<?xml version="1.0" encoding="UTF-8"?>\n'
-                 '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-                 f"  <url><loc>{SITE}</loc></url>\n  <url><loc>{SITE}es/</loc></url>\n</urlset>\n")
+                 '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + urls + "</urlset>\n")
     with open(os.path.join(docs, "robots.txt"), "w") as fh:
         fh.write(f"User-agent: *\nAllow: /\nSitemap: {SITE}sitemap.xml\n")
     with open(os.path.join(docs, "icon.svg"), "w") as fh:

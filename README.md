@@ -2,7 +2,7 @@
 
 **Get back the folders and files of a USB drive you formatted by mistake. Free, no limits, and it never writes to the drive.**
 
-[Website](https://aluhxp.github.io/unformat-usb/) · [Leer en español](README.es.md)
+[Website](https://aluhxp.github.io/unformat-usb/) · [Leer en español](README.es.md) · [Site em português](https://aluhxp.github.io/unformat-usb/pt/)
 
 ## Formatted your USB drive by mistake?
 
@@ -15,6 +15,7 @@ Stop and don't copy anything new onto it. A quick format (the default on Windows
 - **Lost names**: suggests a name for folders that lost theirs and renames only what you approve. It can be undone.
 - **Only photos and videos**, each in its folder, if that is all you need.
 - **Never writes to the drive**, and refuses to save rescued files onto it.
+- In **English, Spanish and Portuguese**.
 
 Works with USB drives and cards formatted as **exFAT** and **FAT32**.
 

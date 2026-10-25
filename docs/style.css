@@ -30,6 +30,7 @@ section.wrap { margin: 72px auto; }
 .brand { display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none;
          font-weight: 800; font-size: 1.2rem; }
 .mascot { width: 34px; height: 40px; }
+.langs { display: flex; gap: 8px; }
 .lang { font-weight: 700; text-decoration: none; border: 2px solid var(--accent); border-radius: 999px;
         padding: 4px 16px; }
 
@@ -89,6 +90,8 @@ figcaption { text-align: center; color: var(--soft); font-size: .95rem; margin-t
   .feats { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 520px) {
+  .top { flex-wrap: wrap; gap: 10px; }
+  .lang { padding: 4px 12px; font-size: .9rem; }
   section.wrap { margin: 48px auto; }
   .first, .donate { margin-left: 16px; margin-right: 16px; }
   .feats { grid-template-columns: 1fr; }
