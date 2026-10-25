@@ -1,11 +1,19 @@
 **Formatted your USB drive by mistake? Unformat USB gets your folders and files back. Free, no limits, and it never writes to the drive.**
 
+## New in 0.1.1
+
+- **Português**: the program and the web page now speak Portuguese too (Brazil).
+- **Linux**: a one-click AppImage, no installation needed.
+- The program has its own icon, and its own font (Nunito) on every system.
+- More room for the file list next to the preview.
+- The command line speaks English (and Spanish with `--lang es`).
+
 ## Download
 
 - **Windows**: `UnformatUSB.exe` below. Open it and accept the administrator request (a whole drive cannot be read without it).
   It is not signed yet, so Windows may say "Windows protected your PC": choose **More info** → **Run anyway**.
 - **macOS**: `UnformatUSB-macOS.zip` below. Unzip it, then the first time right-click the app → **Open**. It asks for your password to read the drive.
-- **Linux**: `pip install "unformat-usb[gui] @ git+https://github.com/aluhxp/unformat-usb"` and run `unformat-usb`.
+- **Linux**: `UnformatUSB-x86_64.AppImage` below. Make it executable (`chmod +x`) and open it. It asks for your password to read the drive.
 
 ## What it does
 
@@ -24,3 +32,5 @@ If it helped you, the last screen has a way to buy us a coffee. Thank you!
 ---
 
 **¿Formateaste tu USB por error?** Unformat USB recupera tus carpetas y archivos, gratis y sin escribir nada en la unidad. Elige "Español" arriba a la derecha en la app. [Leer en español](https://github.com/aluhxp/unformat-usb/blob/main/README.es.md).
+
+**Formatou seu pendrive por engano?** O Unformat USB recupera suas pastas e arquivos, grátis e sem gravar nada no pendrive. Escolha "Português" no menu de idioma, no alto à direita. [Site em português](https://aluhxp.github.io/unformat-usb/pt/).

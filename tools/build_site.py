@@ -22,6 +22,7 @@ SITE = "https://aluhxp.github.io/unformat-usb/"
 REPO = "https://github.com/aluhxp/unformat-usb"
 EXE = REPO + "/releases/latest/download/UnformatUSB.exe"
 MAC = REPO + "/releases/latest/download/UnformatUSB-macOS.zip"
+LINUX = REPO + "/releases/latest/download/UnformatUSB-x86_64.AppImage"
 POLICY = REPO + "/blob/main/docs/code-signing.md"
 
 T = {
@@ -344,7 +345,7 @@ def page(lang):
       <a class="btn primary" href="{EXE}" data-os="win">{t['dl_win']}</a>
       <a class="btn" href="{MAC}" data-os="mac">{t['dl_mac']}</a>
     </div>
-    <p class="note">{t['dl_note'].format(v=VERSION)} <a class="linux" href="{REPO}#download">{t['dl_linux']}</a></p>
+    <p class="note">{t['dl_note'].format(v=VERSION)} <a class="linux" href="{LINUX}">{t['dl_linux']}</a></p>
   </div>
   <picture class="hero-shot">
     <source srcset="{up}img/en_dark/3-tree.png" media="(prefers-color-scheme: dark)">
