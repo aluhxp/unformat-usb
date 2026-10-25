@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unformat USB: recover a USB drive formatted by mistake, free</title>
+<meta name="description" content="Free, open source program that brings back the folders and files of a USB drive or memory card formatted by mistake (exFAT and FAT32). No limits, never writes to the drive. Windows, macOS and Linux.">
+<link rel="canonical" href="https://aluhxp.github.io/unformat-usb/">
+<link rel="alternate" hreflang="en" href="https://aluhxp.github.io/unformat-usb/">
+<link rel="alternate" hreflang="es" href="https://aluhxp.github.io/unformat-usb/es/">
+<link rel="alternate" hreflang="x-default" href="https://aluhxp.github.io/unformat-usb/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Unformat USB: recover a USB drive formatted by mistake, free">
+<meta property="og:description" content="Free, open source program that brings back the folders and files of a USB drive or memory card formatted by mistake (exFAT and FAT32). No limits, never writes to the drive. Windows, macOS and Linux.">
+<meta property="og:url" content="https://aluhxp.github.io/unformat-usb/">
+<meta property="og:image" content="https://aluhxp.github.io/unformat-usb/img/en/3-tree.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#147A5E">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "Unformat USB", "softwareVersion": "0.1.0", "applicationCategory": "UtilitiesApplication", "operatingSystem": "Windows, macOS, Linux", "description": "Free, open source program that brings back the folders and files of a USB drive or memory card formatted by mistake (exFAT and FAT32). No limits, never writes to the drive. Windows, macOS and Linux.", "url": "https://aluhxp.github.io/unformat-usb/", "downloadUrl": "https://github.com/aluhxp/unformat-usb/releases/latest/download/UnformatUSB.exe", "license": "https://www.gnu.org/licenses/gpl-3.0.html", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Can I recover files after formatting a USB drive?", "acceptedAnswer": {"@type": "Answer", "text": "Usually yes. A quick format, the default on Windows, macOS and Linux, only wipes the index of the drive. The files stay where they were until something new is written over them."}}, {"@type": "Question", "name": "Is it really free?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. No limits, no trial, no ads in the program. It is open source (GPL-3.0). If it helps you, you can buy us a coffee, but you don't have to."}}, {"@type": "Question", "name": "Does it work with SD and microSD cards?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, with any card or USB drive formatted as exFAT or FAT32, through a card reader or adapter."}}, {"@type": "Question", "name": "Can it damage my drive?", "acceptedAnswer": {"@type": "Answer", "text": "No. It only reads. It never writes, repairs or formats the drive, and it won't save the rescued files onto the same drive."}}, {"@type": "Question", "name": "Why does Windows ask for administrator rights?", "acceptedAnswer": {"@type": "Answer", "text": "Reading a whole drive, below its files, needs them. That is the only reason."}}, {"@type": "Question", "name": "Windows says “Windows protected your PC”. Is it safe?", "acceptedAnswer": {"@type": "Answer", "text": "The program is not signed yet (a certificate is on the way). Choose “More info” and “Run anyway”. The source code is public and every version is built and tested automatically on GitHub."}}]}</script>
+<script src="ads.js" defer></script>
+</head>
+<body>
+<header class="top wrap">
+  <a class="brand" href="https://aluhxp.github.io/unformat-usb/"><svg class="mascot" viewBox="0 0 64 76" aria-hidden="true">
+<rect x="20" y="0" width="24" height="18" rx="3" fill="#B9C9C2"/>
+<rect x="4" y="14" width="56" height="58" rx="16" fill="#FFC857"/>
+<rect x="18" y="36" width="8" height="5" rx="2.5" fill="#17302B"/>
+<rect x="38" y="36" width="8" height="5" rx="2.5" fill="#17302B"/>
+<path d="M22 50h20a3 3 0 0 1 3 3c0 5-6 9-13 9s-13-4-13-9a3 3 0 0 1 3-3z" fill="#17302B"/>
+</svg><span>Unformat USB</span></a>
+  <a class="lang" href="es/" hreflang="es">Español</a>
+</header>
+<main>
+<section class="hero wrap">
+  <div class="hero-text">
+    <h1>Formatted your USB drive by mistake?</h1>
+    <p class="lead">Your files are probably still there. Unformat USB finds them and brings them back with their folders. <strong>Free, no limits</strong>, and it never writes to the drive.</p>
+    <div class="dl">
+      <a class="btn primary" href="https://github.com/aluhxp/unformat-usb/releases/latest/download/UnformatUSB.exe" data-os="win">Download for Windows</a>
+      <a class="btn" href="https://github.com/aluhxp/unformat-usb/releases/latest/download/UnformatUSB-macOS.zip" data-os="mac">Download for macOS</a>
+    </div>
+    <p class="note">Version 0.1.0 · English and Spanish · not signed yet: Windows may warn you, choose <em>More info → Run anyway</em>. <a class="linux" href="https://github.com/aluhxp/unformat-usb#download">Linux →</a></p>
+  </div>
+  <picture class="hero-shot">
+    <source srcset="img/en_dark/3-tree.png" media="(prefers-color-scheme: dark)">
+    <img src="img/en/3-tree.png" alt="Unformat USB showing the folders it found on a formatted drive" width="960" height="640">
+  </picture>
+</section>
+
+<section class="wrap first">
+  <h2>First, before anything else</h2>
+  <ol><li><strong>Stop using the drive.</strong> Don't copy anything new onto it: every new file can cover an old one.</li><li><strong>Don't format it again</strong> and don't let a program “repair” it.</li><li>Keep it unplugged until you have the program ready.</li></ol>
+</section>
+
+<section class="wrap">
+  <h2>How it works</h2>
+  <ol class="how"><li><span class="n">1</span><h3>Choose the drive</h3><p>Only external drives and cards are listed, so you can't pick your computer's own disk by accident.</p></li><li><span class="n">2</span><h3>Watch the folders appear</h3><p>It shows what it finds while it searches, with a preview. Tick what you want.</p></li><li><span class="n">3</span><h3>Rescue</h3><p>The files are copied to your computer, never onto the drive itself.</p></li></ol>
+</section>
+
+<aside class="ad" data-ad-slot="after-how" aria-label="Advertisement"></aside>
+
+<section class="wrap">
+  <h2>What it does</h2>
+  <ul class="feats"><li><h3>Rebuilds your folders</h3><p>With their original names and contents, including large videos stored in pieces.</p></li><li><h3>Free for real</h3><p>No 100 MB or 500 MB limit, no trial, no account. Rescue everything.</p></li><li><h3>Read-only</h3><p>It never writes, repairs or formats the drive, and refuses to save the rescue onto it.</p></li><li><h3>Safe mode</h3><p>Copies the whole drive to your computer first, then works on the copy. Best if the drive is failing.</p></li><li><h3>Loose files too</h3><p>Files that were outside any folder come back named after their content (a photo's date, a document's title).</p></li><li><h3>Names lost folders</h3><p>Suggests a name for folders that lost theirs. You approve, and it can be undone.</p></li><li><h3>Only photos and videos</h3><p>One tick, and you get just your pictures and videos, each in its folder.</p></li><li><h3>Private</h3><p>Works offline. Nothing about you or your files is sent anywhere.</p></li></ul>
+</section>
+
+<section class="wrap">
+  <h2>A look inside</h2>
+  <div class="shots"><figure><picture><source srcset="img/en_dark/1-pick.png" media="(prefers-color-scheme: dark)"><img src="img/en/1-pick.png" alt="Choose the drive" width="960" height="640" loading="lazy"></picture><figcaption>Choose the drive</figcaption></figure><figure><picture><source srcset="img/en_dark/5-done.png" media="(prefers-color-scheme: dark)"><img src="img/en/5-done.png" alt="Done: what came back" width="960" height="640" loading="lazy"></picture><figcaption>Done: what came back</figcaption></figure><figure><picture><source srcset="img/en_dark/6-names.png" media="(prefers-color-scheme: dark)"><img src="img/en/6-names.png" alt="Names for folders that lost theirs" width="960" height="640" loading="lazy"></picture><figcaption>Names for folders that lost theirs</figcaption></figure></div>
+</section>
+
+<section class="wrap honest">
+  <h2>When it cannot help</h2>
+  <p>To be clear: after a <strong>full format</strong> (it writes zeros everywhere), after heavy use of the drive since the format, or on an <strong>SSD/NVMe</strong> (the system erases free space by itself), there may be nothing left. Unformat USB tells you so instead of promising what it cannot do. It supports <strong>exFAT</strong> and <strong>FAT32</strong>, the formats of almost every USB drive and memory card; NTFS is not supported yet.</p>
+</section>
+
+<aside class="ad" data-ad-slot="before-faq" aria-label="Advertisement"></aside>
+
+<section class="wrap faq">
+  <h2>Questions</h2>
+  <details><summary>Can I recover files after formatting a USB drive?</summary><p>Usually yes. A quick format, the default on Windows, macOS and Linux, only wipes the index of the drive. The files stay where they were until something new is written over them.</p></details><details><summary>Is it really free?</summary><p>Yes. No limits, no trial, no ads in the program. It is open source (GPL-3.0). If it helps you, you can buy us a coffee, but you don&#x27;t have to.</p></details><details><summary>Does it work with SD and microSD cards?</summary><p>Yes, with any card or USB drive formatted as exFAT or FAT32, through a card reader or adapter.</p></details><details><summary>Can it damage my drive?</summary><p>No. It only reads. It never writes, repairs or formats the drive, and it won&#x27;t save the rescued files onto the same drive.</p></details><details><summary>Why does Windows ask for administrator rights?</summary><p>Reading a whole drive, below its files, needs them. That is the only reason.</p></details><details><summary>Windows says “Windows protected your PC”. Is it safe?</summary><p>The program is not signed yet (a certificate is on the way). Choose “More info” and “Run anyway”. The source code is public and every version is built and tested automatically on GitHub.</p></details>
+</section>
+
+<section class="wrap donate">
+  <div>
+    <h2>Did it help?</h2>
+    <p>Unformat USB is free and will stay free. If it brought your files back, you can buy us a coffee.</p>
+  </div>
+  <a class="btn sun" href="https://www.paypal.com/donate/?business=aluhxp%40gmail.com&amp;currency_code=USD&amp;item_name=Unformat+USB" rel="noopener">Donate with PayPal</a>
+</section>
+
+<aside class="ad" data-ad-slot="bottom" aria-label="Advertisement"></aside>
+</main>
+<footer class="wrap foot">
+  <a href="https://github.com/aluhxp/unformat-usb">Source code</a>
+  <a href="https://github.com/aluhxp/unformat-usb/blob/main/docs/code-signing.md">Code signing policy and privacy</a>
+  <a href="https://github.com/aluhxp/unformat-usb/blob/main/LICENSE">License GPL-3.0</a>
+</footer>
+<script>
+// put the button for the visitor's system first
+(function () {
+  var mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+  if (!mac) return;
+  var dl = document.querySelector('.dl'), m = dl.querySelector('[data-os=mac]'), w = dl.querySelector('[data-os=win]');
+  m.classList.add('primary'); w.classList.remove('primary'); dl.insertBefore(m, w);
+})();
+</script>
+</body>
+</html>

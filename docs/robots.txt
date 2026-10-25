@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://aluhxp.github.io/unformat-usb/sitemap.xml
