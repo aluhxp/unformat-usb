@@ -102,11 +102,12 @@ Item {
                         }
                     }
                     Txt {
+                        readonly property string count: row.modelData.files === 1 ? qsTr("1 archivo") : qsTr("%1 archivos").arg(win.num(row.modelData.files))
                         width: parent.width; color: Theme.soft; font.pixelSize: 13
                         wrapMode: Text.NoWrap; elide: Text.ElideMiddle
                         text: row.modelData.source === "original"
-                            ? qsTr("Ahora: %1 · %2 archivos · lo vimos en %3").arg(row.modelData.current).arg(win.num(row.modelData.files)).arg(row.modelData.example)
-                            : qsTr("Ahora: %1 · %2 archivos").arg(row.modelData.current).arg(win.num(row.modelData.files))
+                            ? qsTr("Ahora: %1 · %2 · lo vimos en %3").arg(row.modelData.current).arg(count).arg(row.modelData.example)
+                            : qsTr("Ahora: %1 · %2").arg(row.modelData.current).arg(count)
                     }
                 }
             }

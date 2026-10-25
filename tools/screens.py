@@ -114,6 +114,12 @@ def main():
     backend.recover(os.path.join(work, "out"))
     settle("done")
     shot("5-done")
+    backend.suggestNames()
+    end = time.time() + 30
+    while (backend.state["phase"] != "naming" or backend.state["namesBusy"]) and time.time() < end:
+        app.processEvents()
+        time.sleep(0.01)
+    shot("6-names")
     backend.deleteCopy()
     print("phase:", backend.state["phase"], {k: backend.state[k] for k in ("sumOk", "sumWarned", "sumOrphans", "sumUnnamed")})
     backend.cleanup()

@@ -154,6 +154,11 @@ def _office_text(data):
         return ""
 
 
+def _not_a_name(part):
+    """Pieces of code that look like paths: 'page[@name', 'a=b', '{{x}}'."""
+    return any(x in part for x in ("[@", "=", "{", "}", "()", "<", ">", "*")) or part.startswith("@")
+
+
 def paths_in(data, ext):
     """Every path a file holds, each as a list of names (drive letter left out)."""
     out = []
@@ -176,7 +181,7 @@ def paths_in(data, ext):
     for parts in out:
         parts = [p.strip() for p in parts]
         parts = [p for p in parts if p and p not in (".", "..")]
-        if len(parts) < 2:
+        if len(parts) < 2 or any(_not_a_name(p) for p in parts):
             continue
         clean.append(parts)
         # a path quoted in a sentence runs on into the words after it
@@ -357,7 +362,9 @@ def _kind(items):
     if big != "other" and b * 10 >= volume * 8 and counts[big] * 10 >= total * 4:
         return big
     # photos and videos together are what a phone or camera leaves
-    if (counts["photos"] + counts["videos"]) * 10 >= total * 8 and counts["photos"]:
+    camera, camera_bytes = counts["photos"] + counts["videos"], sizes["photos"] + sizes["videos"]
+    if counts["photos"] and (camera * 10 >= total * 8 or
+                             (camera_bytes * 10 >= volume * 8 and camera * 10 >= total * 4)):
         return "photos"
     if (counts["documents"] + counts["spreadsheets"] + counts["presentations"]) * 10 >= total * 7:
         return "documents"
@@ -448,8 +455,9 @@ def suggest(items, folders, label=english_label, budget=None):
         else:
             kind = _kind(f.items)
             # the shared word is looked for among the files that make it what it is
-            main = [it for it in f.items if _kind_of(it) == kind] if kind != "mixed" else f.items
-            years, theme = _years(f.items), _theme(main or f.items)
+            # (in a mixed folder a shared word says little: it is left out)
+            main = [it for it in f.items if _kind_of(it) == kind] if kind != "mixed" else []
+            years, theme = _years(f.items), _theme(main) if main else ""
             s = Suggestion(f.path, "content", sanitize(label(kind, years, theme)), kind=kind,
                            years=years, theme=theme, files=len(f.items))
         s.name = _unique(s.name, used)

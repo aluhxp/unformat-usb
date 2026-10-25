@@ -46,6 +46,11 @@ def test_paths_are_found_in_office_files_shortcuts_and_notes():
     assert ["Clientes", "Perez", "contrato firmado.pdf"] in paths_in(note, "txt")
 
 
+def test_code_that_looks_like_a_path_is_not_one():
+    view = b'<xpath expr="//form/notebook/page[@name=\'x\']" position="after"/> /api/{id}/items'
+    assert paths_in(view, "xml") == []
+
+
 def test_a_playlist_with_relative_paths_counts():
     playlist = b"#EXTM3U\r\n..\\Viaje 2019\\Rock\\cancion uno.mp3\r\n"
     assert ["Viaje 2019", "Rock", "cancion uno.mp3"] in paths_in(playlist, "m3u")
