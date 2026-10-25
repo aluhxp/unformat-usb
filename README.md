@@ -15,9 +15,10 @@ Stop and don't copy anything new onto it. A quick format (the default on Windows
 - **Lost names**: suggests a name for folders that lost theirs and renames only what you approve. It can be undone.
 - **Only photos and videos**, each in its folder, if that is all you need.
 - **Never writes to the drive**, and refuses to save rescued files onto it.
+- **Deleted files**: deleted something by mistake without formatting? It looks for it in its folder, without touching what is on the drive now.
 - In **English, Spanish and Portuguese**.
 
-Works with USB drives and cards formatted as **exFAT** and **FAT32**.
+Works with USB drives and cards formatted as **exFAT**, **FAT32** and **NTFS**.
 
 ## Download
 

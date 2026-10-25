@@ -1,10 +1,12 @@
 **Formatted your USB drive by mistake? Unformat USB gets your folders and files back. Free, no limits, and it never writes to the drive.**
 
-## New in 0.1.2
+## New in 0.1.3
 
-- The "Buy us a coffee" button works again: PayPal's Donate page refused the project's country, so it is now a plain PayPal payment.
+- **NTFS drives**: a drive that was NTFS before the format now comes back too, with its folders, names and dates (also after formatting it as exFAT or FAT32).
+- **Deleted files**: on a drive that was not formatted, "Look for deleted files" brings back what was deleted, each file in its folder, without touching what is on the drive now. It warns you when a newer file has used the space of a deleted one.
+- Folders whose first entry was a deleted file are no longer missed.
 
-(0.1.1 brought Portuguese, the Linux AppImage, the program's icon and font, and the English command line.)
+(0.1.2 fixed the donation button; 0.1.1 brought Portuguese, the Linux AppImage, the icon and font, and the English command line.)
 
 ## Download
 
@@ -15,7 +17,8 @@
 
 ## What it does
 
-- Rebuilds folders with their names after a quick format (exFAT and FAT32).
+- Rebuilds folders with their names after a quick format (exFAT, FAT32 and NTFS).
+- Brings back deleted files on a drive that was not formatted.
 - Shows what it finds while it searches; rescue a folder without waiting.
 - Safe mode: copies the whole drive first and works on the copy.
 - Brings back loose files named after their content, without duplicates.

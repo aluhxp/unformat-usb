@@ -15,9 +15,10 @@ Para todo y no copies nada nuevo en él. Un formateo rápido (el que hacen Windo
 - **Nombres perdidos**: propone un nombre para las carpetas que lo perdieron y solo las renombra si tú lo apruebas. Se puede deshacer.
 - **Solo fotos y videos**, cada uno en su carpeta, si es lo único que te importa.
 - **Nunca escribe en el pendrive** ni deja guardar lo rescatado en él.
+- **Archivos borrados**: ¿borraste algo por error sin formatear? Lo busca en su carpeta, sin tocar lo que hay ahora en el pendrive.
 - En **español, inglés y portugués**.
 
-Funciona con pendrives y tarjetas en **exFAT** y **FAT32**.
+Funciona con pendrives y tarjetas en **exFAT**, **FAT32** y **NTFS**.
 
 ## Descargar
 

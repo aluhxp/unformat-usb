@@ -4,7 +4,7 @@ import re
 import urllib.parse
 
 APP_NAME = "Unformat USB"
-VERSION = "0.1.2"
+VERSION = "0.1.3"
 
 # Voluntary donations. They are offered only after a rescue that worked,
 # never before and never in the way. Empty: the offer is not shown at all.

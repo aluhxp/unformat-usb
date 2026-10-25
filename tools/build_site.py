@@ -30,7 +30,7 @@ T = {
         path="", lang_attr="en",
         title="Unformat USB: recover a USB drive formatted by mistake, free",
         description="Free, open source program that brings back the folders and files of a USB "
-                    "drive or memory card formatted by mistake (exFAT and FAT32). No limits, "
+                    "drive or memory card formatted by mistake (exFAT, FAT32 and NTFS). No limits, "
                     "never writes to the drive. Windows, macOS and Linux.",
         h1="Formatted your USB drive by mistake?",
         lead="Your files are probably still there. Unformat USB finds them and brings them back "
@@ -65,6 +65,8 @@ T = {
                 "and it can be undone."),
                ("Only photos and videos", "One tick, and you get just your pictures and videos, "
                 "each in its folder."),
+               ("Deleted files too", "Deleted something by mistake, without formatting? It looks "
+                "for it in its folder, without touching what is on the drive now."),
                ("Private", "Works offline. Nothing about you or your files is sent anywhere.")],
         shots_h="A look inside",
         shots=[("1-pick", "Choose the drive"), ("5-done", "Done: what came back"),
@@ -74,8 +76,8 @@ T = {
                "after heavy use of the drive since the format, or on an <strong>SSD/NVMe</strong> "
                "(the system erases free space by itself), there may be nothing left. "
                "Unformat USB tells you so instead of promising what it cannot do. It supports "
-               "<strong>exFAT</strong> and <strong>FAT32</strong>, the formats of almost every "
-               "USB drive and memory card; NTFS is not supported yet.",
+               "<strong>exFAT</strong>, <strong>FAT32</strong> and <strong>NTFS</strong>, the "
+               "formats of almost every USB drive and memory card.",
         faq_h="Questions",
         faq=[("Can I recover files after formatting a USB drive?",
               "Usually yes. A quick format, the default on Windows, macOS and Linux, only wipes "
@@ -85,7 +87,7 @@ T = {
               "Yes. No limits, no trial, no ads in the program. It is open source (GPL-3.0). If it "
               "helps you, you can buy us a coffee, but you don't have to."),
              ("Does it work with SD and microSD cards?",
-              "Yes, with any card or USB drive formatted as exFAT or FAT32, through a card reader "
+              "Yes, with any card or USB drive formatted as exFAT, FAT32 or NTFS, through a card reader "
               "or adapter."),
              ("Can it damage my drive?",
               "No. It only reads. It never writes, repairs or formats the drive, and it won't save "
@@ -108,7 +110,7 @@ T = {
         path="es/", lang_attr="es",
         title="Unformat USB: recuperar un pendrive formateado por error, gratis",
         description="Programa gratuito y de código abierto que recupera las carpetas y archivos "
-                    "de un pendrive o tarjeta de memoria formateada por error (exFAT y FAT32). Sin "
+                    "de un pendrive o tarjeta de memoria formateada por error (exFAT, FAT32 y NTFS). Sin "
                     "límites y sin escribir nada en la unidad. Windows, macOS y Linux.",
         h1="¿Formateaste tu pendrive por error?",
         lead="Lo más probable es que tus archivos sigan ahí. Unformat USB los encuentra y los "
@@ -144,6 +146,8 @@ T = {
                 "el suyo. Tú apruebas, y se puede deshacer."),
                ("Solo fotos y videos", "Con una marca, recuperas solo tus fotos y videos, cada "
                 "uno en su carpeta."),
+               ("También archivos borrados", "¿Borraste algo por error, sin formatear? Lo busca "
+                "en su carpeta, sin tocar lo que hay ahora en el pendrive."),
                ("Privado", "Funciona sin internet. No envía nada sobre ti ni tus archivos.")],
         shots_h="Por dentro",
         shots=[("1-pick", "Elige el pendrive"), ("5-done", "Listo: lo que volvió"),
@@ -153,8 +157,8 @@ T = {
                "en todo), de usar mucho el pendrive tras formatearlo, o en un "
                "<strong>SSD/NVMe</strong> (el sistema borra solo el espacio libre), puede que no "
                "quede nada. Unformat USB te lo dice en vez de prometer lo que no puede. Funciona "
-               "con <strong>exFAT</strong> y <strong>FAT32</strong>, los formatos de casi todos "
-               "los pendrives y tarjetas; NTFS todavía no.",
+               "con <strong>exFAT</strong>, <strong>FAT32</strong> y <strong>NTFS</strong>, los "
+               "formatos de casi todos los pendrives y tarjetas.",
         faq_h="Preguntas",
         faq=[("¿Se pueden recuperar archivos después de formatear un pendrive?",
               "Normalmente sí. Un formateo rápido, el que hacen por defecto Windows, macOS y "
@@ -164,7 +168,7 @@ T = {
               "Sí. Sin límites, sin prueba, sin anuncios en el programa. Es código abierto "
               "(GPL-3.0). Si te ayuda, puedes invitarnos un café, pero no es obligatorio."),
              ("¿Funciona con tarjetas SD y microSD?",
-              "Sí, con cualquier tarjeta o pendrive en exFAT o FAT32, usando un lector o "
+              "Sí, con cualquier tarjeta o pendrive en exFAT, FAT32 o NTFS, usando un lector o "
               "adaptador."),
              ("¿Puede dañar mi pendrive?",
               "No. Solo lee. Nunca escribe, repara ni formatea la unidad, y no guarda los "
@@ -188,7 +192,7 @@ T = {
         path="pt/", lang_attr="pt-BR",
         title="Unformat USB: recuperar um pendrive formatado por engano, grátis",
         description="Programa grátis e de código aberto que recupera as pastas e arquivos de um "
-                    "pendrive ou cartão de memória formatado por engano (exFAT e FAT32). Sem "
+                    "pendrive ou cartão de memória formatado por engano (exFAT, FAT32 e NTFS). Sem "
                     "limites e sem gravar nada no pendrive. Windows, macOS e Linux.",
         h1="Formatou seu pendrive por engano?",
         lead="Provavelmente seus arquivos ainda estão aí. O Unformat USB encontra e recupera "
@@ -225,6 +229,8 @@ T = {
                 "Você aprova, e dá para desfazer."),
                ("Só fotos e vídeos", "Com uma marca, você recupera só suas fotos e vídeos, cada "
                 "um na sua pasta."),
+               ("Arquivos apagados também", "Apagou algo por engano, sem formatar? Ele procura "
+                "na pasta, sem mexer no que está no pendrive agora."),
                ("Privado", "Funciona sem internet. Não envia nada sobre você ou seus arquivos.")],
         shots_h="Por dentro",
         shots=[("1-pick", "Escolha o pendrive"), ("5-done", "Pronto: o que voltou"),
@@ -234,8 +240,8 @@ T = {
                "em tudo), de muito uso do pendrive depois de formatar, ou em um "
                "<strong>SSD/NVMe</strong> (o sistema apaga sozinho o espaço livre), pode não "
                "sobrar nada. O Unformat USB avisa em vez de prometer o que não pode. Funciona "
-               "com <strong>exFAT</strong> e <strong>FAT32</strong>, os formatos de quase todos "
-               "os pendrives e cartões; NTFS ainda não.",
+               "com <strong>exFAT</strong>, <strong>FAT32</strong> e <strong>NTFS</strong>, os "
+               "formatos de quase todos os pendrives e cartões.",
         faq_h="Perguntas",
         faq=[("Dá para recuperar arquivos depois de formatar um pendrive?",
               "Normalmente sim. A formatação rápida, a padrão do Windows, macOS e Linux, só apaga "
@@ -244,7 +250,7 @@ T = {
               "Sim. Sem limites, sem teste, sem anúncios no programa. É código aberto (GPL-3.0). "
               "Se ajudar, você pode pagar um café para a gente, mas não é obrigatório."),
              ("Funciona com cartões SD e microSD?",
-              "Sim, com qualquer cartão ou pendrive em exFAT ou FAT32, usando um leitor ou "
+              "Sim, com qualquer cartão ou pendrive em exFAT, FAT32 ou NTFS, usando um leitor ou "
               "adaptador."),
              ("Pode danificar meu pendrive?",
               "Não. Ele só lê. Nunca grava, conserta ou formata o pendrive, e não salva os "
