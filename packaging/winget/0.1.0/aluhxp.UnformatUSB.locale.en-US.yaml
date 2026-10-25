@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.9.0.schema.json
+PackageIdentifier: aluhxp.UnformatUSB
+PackageVersion: 0.1.0
+PackageLocale: en-US
+Publisher: aluhxp
+PublisherUrl: https://github.com/aluhxp
+PublisherSupportUrl: https://github.com/aluhxp/unformat-usb/issues
+PackageName: Unformat USB
+PackageUrl: https://aluhxp.github.io/unformat-usb/
+License: GPL-3.0-or-later
+LicenseUrl: https://github.com/aluhxp/unformat-usb/blob/main/LICENSE
+ShortDescription: Get back the folders and files of a USB drive or memory card formatted by mistake. Free, no limits, read-only.
+Description: |-
+  Unformat USB recovers the folders and files of a USB drive or memory card that was quick-formatted by mistake (exFAT and FAT32).
+  It reads the drive strictly read-only, rebuilds the old folder tree with its names, shows what it finds while it searches and copies the files to your computer.
+  It can first copy the whole drive and work on the copy, brings back loose files named after their content, suggests names for folders that lost theirs, and has a quick option for only photos and videos.
+  Free with no limits, works offline, English and Spanish.
+Moniker: unformat-usb
+Tags:
+- data-recovery
+- exfat
+- fat32
+- file-recovery
+- format
+- recovery
+- sd-card
+- usb
+- usb-drive
+ReleaseNotesUrl: https://github.com/aluhxp/unformat-usb/releases/tag/v0.1.0
+ManifestType: defaultLocale
+ManifestVersion: 1.9.0

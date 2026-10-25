@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.locale.1.9.0.schema.json
+PackageIdentifier: aluhxp.UnformatUSB
+PackageVersion: 0.1.0
+PackageLocale: es-MX
+Publisher: aluhxp
+PackageName: Unformat USB
+ShortDescription: Recupera las carpetas y archivos de un pendrive o tarjeta de memoria formateada por error. Gratis, sin límites y solo lectura.
+Tags:
+- formatear
+- pendrive
+- recuperar-archivos
+- recuperacion-de-datos
+- tarjeta-sd
+- usb
+ManifestType: locale
+ManifestVersion: 1.9.0
