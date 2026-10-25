@@ -151,19 +151,20 @@ def test_renaming_keeps_a_log_and_can_be_undone(tmp_path):
         os.makedirs(tmp_path / os.path.dirname(p), exist_ok=True)
         (tmp_path / p).write_text("x")
     report = tmp_path / "_report.csv"
-    report.write_text("ruta,tamano\nFolder 1/a.txt,1\nFolder 2/sub/b.txt,1\nOtra/c.txt,1\n")
+    sep = os.sep
+    report.write_text(f"ruta,tamano\nFolder 1{sep}a.txt,1\nFolder 2{sep}sub{sep}b.txt,1\nOtra{sep}c.txt,1\n")
     log = str(tmp_path / "_names.json")
 
     done = naming.rename(str(tmp_path), [(("Folder 1",), "Trabajo"), (("Folder 2",), "Fotos")],
                          log, str(report))
     assert done == [("Folder 1", "Trabajo"), ("Folder 2", "Fotos")]
     assert (tmp_path / "Fotos/sub/b.txt").exists() and not (tmp_path / "Folder 2").exists()
-    assert "Trabajo/a.txt" in report.read_text() and "Folder 1" not in report.read_text()
+    assert f"Trabajo{sep}a.txt" in report.read_text() and "Folder 1" not in report.read_text()
     assert [s["to"] for s in json.load(open(log))] == ["Trabajo", "Fotos"]
 
     assert naming.undo(str(tmp_path), log, str(report)) == 2
     assert (tmp_path / "Folder 1/a.txt").exists() and (tmp_path / "Folder 2/sub/b.txt").exists()
-    assert "Folder 1/a.txt" in report.read_text()
+    assert f"Folder 1{sep}a.txt" in report.read_text()
     assert not os.path.exists(log)
 
 

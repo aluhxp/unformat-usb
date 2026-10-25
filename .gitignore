@@ -12,3 +12,6 @@ dist/
 *.csv
 recuperado*/
 *.egg-info/
+build/
+dist/
+*.spec

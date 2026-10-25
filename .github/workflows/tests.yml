@@ -4,15 +4,21 @@ on: [push, pull_request]
 
 jobs:
   pytest:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      # the test images are formatted with the real tools
-      - run: sudo apt-get update && sudo apt-get install -y exfatprogs dosfstools libegl1 libgl1 libxkbcommon0 libfontconfig1
-      - run: pip install pytest PySide6-Essentials
+      # Linux formats the test images with the real tools; Windows and macOS
+      # replay what those tools wrote (tests/factory/recorded.py)
+      - if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y exfatprogs dosfstools libegl1 libgl1 libxkbcommon0 libfontconfig1
+      - run: pip install -e ".[dev,gui]"
       - run: pytest -q
         env:
           QT_QPA_PLATFORM: offscreen

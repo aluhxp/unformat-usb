@@ -13,7 +13,9 @@ Item {
     })
     readonly property var detail: ({
         nothing: qsTr("Puede que se hiciera un formateo completo, que borra todo, o que el pendrive usara otro sistema de archivos. No es culpa tuya, y lo sentimos."),
-        no_permission: qsTr("El sistema solo deja leer un pendrive completo con la contraseña de administrador. Si cancelaste la ventana de la contraseña, vuelve a elegirlo e inténtalo otra vez."),
+        no_permission: backend.canRestartAsAdmin
+            ? qsTr("Windows solo deja leer un pendrive completo a un administrador. Abre %1 como administrador: Windows te pedirá confirmarlo.").arg(appName)
+            : qsTr("El sistema solo deja leer un pendrive completo con la contraseña de administrador. Si cancelaste la ventana de la contraseña, vuelve a elegirlo e inténtalo otra vez."),
         same_device: qsTr("La carpeta elegida está en el mismo pendrive que quieres rescatar. Guardar ahí taparía los archivos que buscamos."),
         io: qsTr("Revisa que siga conectado y vuelve a intentarlo. Detalle: %1").arg(st.error.slice(3))
     })
@@ -25,6 +27,19 @@ Item {
         Mascot { width: 84; mood: "sorry"; anchors.horizontalCenter: parent.horizontalCenter }
         Txt { width: parent.width; horizontalAlignment: Text.AlignHCenter; font.pixelSize: 28; font.weight: Font.ExtraBold; text: page.headline[page.code] || "" }
         Txt { width: parent.width; horizontalAlignment: Text.AlignHCenter; color: Theme.soft; text: page.detail[page.code] || "" }
-        Btn { anchors.horizontalCenter: parent.horizontalCenter; label: qsTr("Volver al inicio"); onClicked: backend.back() }
+        Row {
+            anchors.horizontalCenter: parent.horizontalCenter
+            spacing: 14
+            Btn {
+                visible: page.code === "no_permission" && backend.canRestartAsAdmin
+                label: qsTr("Abrir como administrador")
+                onClicked: backend.restartAsAdmin()
+            }
+            Btn {
+                label: qsTr("Volver al inicio")
+                primary: !(page.code === "no_permission" && backend.canRestartAsAdmin)
+                onClicked: backend.back()
+            }
+        }
     }
 }

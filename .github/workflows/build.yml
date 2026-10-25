@@ -1,0 +1,35 @@
+name: build
+
+# a Windows program on every push to main, kept for a few days to try out;
+# a tag like v0.2.0 also attaches it to a release
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[gui]" pyinstaller
+      # --uac-admin: reading a whole drive needs an administrator, so Windows
+      # asks once when the program opens
+      - run: >
+          pyinstaller --noconfirm --onefile --windowed --uac-admin
+          --name Rescatin
+          --add-data "src/usbrescue/gui/qml;usbrescue/gui/qml"
+          packaging/rescatin_main.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Rescatin-windows
+          path: dist/Rescatin.exe
+          retention-days: 14
+      - if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/Rescatin.exe

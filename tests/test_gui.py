@@ -215,7 +215,7 @@ def test_names_are_proposed_applied_and_undone(app, scanned, tmp_path):
     scanned.applyNames(["Mi carpeta", "ignorada", "ignorada"])
     assert scanned.state["phase"] == "done" and scanned.state["renamed"] == 1
     assert "Mi carpeta" in os.listdir(out) and "Carpeta sin nombre 7" in os.listdir(out)
-    assert "Mi carpeta/" in (out / "_informe_recuperacion.csv").read_text()
+    assert "Mi carpeta" + os.sep in (out / "_informe_recuperacion.csv").read_text()
     scanned.undoNames()
     assert sorted(os.listdir(out)) == before and scanned.state["sumUnnamed"] == unnamed
 

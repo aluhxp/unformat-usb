@@ -5,6 +5,7 @@ import csv
 import os
 import queue
 import shutil
+import sys
 import tempfile
 import threading
 import time
@@ -142,6 +143,23 @@ class Backend(QObject):
         if value is not None:
             QDesktopServices.openUrl(QUrl(brand.donation_url(value)))
 
+    @Property(bool, constant=True)
+    def canRestartAsAdmin(self):
+        return sys.platform == "win32"
+
+    @Slot()
+    def restartAsAdmin(self):
+        """Windows: open again with administrator rights (Windows asks first)."""
+        import ctypes
+        import subprocess
+        if getattr(sys, "frozen", False):
+            program, args = sys.executable, subprocess.list2cmdline(sys.argv[1:])
+        else:
+            program, args = sys.executable, subprocess.list2cmdline(["-m", "usbrescue.gui.app"] + sys.argv[1:])
+        if ctypes.windll.shell32.ShellExecuteW(None, "runas", program, args, None, 1) > 32:
+            from PySide6.QtCore import QCoreApplication
+            QCoreApplication.quit()
+
     @Slot(float, result=str)
     def size(self, n):
         return fmt_size(int(n))
@@ -223,6 +241,9 @@ class Backend(QObject):
         d = self._device
         # a drive this process may not open is read through the helper,
         # which makes the system ask for the password
+        if not d.readable and not sys.platform.startswith("linux"):
+            # Windows and macOS: only an administrator may read a whole drive
+            raise PermissionError(d.path)
         disk = None if d.readable else HelperSource(d.path)
         self._session = Session(d.path, names=NAMES, disk=disk)
         self._events.put(("diagnosis", diagnose(self._session.disk)))
